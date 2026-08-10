@@ -14,6 +14,7 @@ android {
     defaultConfig {
         applicationId = "com.example.onetaptransit"
         minSdk = 36
+        //noinspection OldTargetApi
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
@@ -67,5 +68,8 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
 
+    //noinspection UseTomlInstead
     implementation("org.mobilitydata:gtfs-realtime-bindings:0.2.0")
+    //noinspection UseTomlInstead
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.11.0")
 }

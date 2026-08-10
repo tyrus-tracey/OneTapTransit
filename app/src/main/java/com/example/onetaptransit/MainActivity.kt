@@ -11,7 +11,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.onetaptransit.ui.theme.OneTapTransitTheme
+import com.example.onetaptransit.ui.theme.TransitViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -19,11 +21,13 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             OneTapTransitTheme {
+                val transitViewModel: TransitViewModel = viewModel()
+
                 Box(modifier = Modifier
                     .fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    TestButton()
+                    TestButton({transitViewModel.updateRealtimeFeed() })
                 }
             }
         }
