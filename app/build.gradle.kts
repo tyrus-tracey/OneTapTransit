@@ -66,4 +66,6 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
+
+    implementation("org.mobilitydata:gtfs-realtime-bindings:0.2.0")
 }
