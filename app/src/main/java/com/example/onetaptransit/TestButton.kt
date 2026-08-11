@@ -6,15 +6,17 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 
-
 @Composable
 fun TestButton(
-    onButtonClick: () -> Unit
+    displayText: String,
+    postTaskText: String,
+    onButtonClick: () -> Unit,
+    isTaskDone: Boolean
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Button(onClick = onButtonClick)
         {
-            Text("Try me")
+            Text(if (isTaskDone) postTaskText else displayText)
         }
     }
 }

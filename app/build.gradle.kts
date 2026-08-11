@@ -3,6 +3,7 @@ import java.util.Properties
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    //id("com.google.devtools.ksp") version "2.3.10"
 }
 
 android {
@@ -68,8 +69,21 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
 
+    val v_kotlinx_io    = "0.9.1"
+    val v_gtfs_bindings = "0.2.0"
+    val v_viewmodel     = "2.11.0"
+    val v_kzip          = "2.0.0"
+    //val v_room          = "3.0.1"
     //noinspection UseTomlInstead
-    implementation("org.mobilitydata:gtfs-realtime-bindings:0.2.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-io-core:$v_kotlinx_io")
     //noinspection UseTomlInstead
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.11.0")
+    implementation("org.mobilitydata:gtfs-realtime-bindings:$v_gtfs_bindings")
+    //noinspection UseTomlInstead
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:$v_viewmodel")
+    //noinspection UseTomlInstead
+    implementation("de.jonasbroeckmann.kzip:kzip:$v_kzip")
+    //noinspection UseTomlInstead
+    //implementation("androidx.room3:room3-runtime:$v_room")
+    //noinspection UseTomlInstead
+    //ksp("androidx.room3:room3-compiler:$v_room")
 }
