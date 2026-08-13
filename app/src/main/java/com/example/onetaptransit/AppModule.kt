@@ -7,6 +7,7 @@ package com.example.onetaptransit
 import android.content.Context
 import androidx.room3.Room
 import androidx.sqlite.driver.AndroidSQLiteDriver
+import com.example.onetaptransit.staticdata.StaticDataDB
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn

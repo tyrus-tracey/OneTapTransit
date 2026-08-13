@@ -70,6 +70,15 @@ class MainActivity : ComponentActivity() {
                             },
                             false
                         )
+
+                        TestButton(
+                            "truncate stops",
+                            "done!",
+                            onButtonClick = {
+                                transitViewModel.truncateTest() { }
+                            },
+                            false
+                        )
                     }
                 }
             }

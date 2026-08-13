@@ -1,4 +1,4 @@
-package com.example.onetaptransit
+package com.example.onetaptransit.staticdata
 
 import javax.inject.Inject
 
@@ -16,5 +16,9 @@ class StaticDataRepository @Inject constructor(
 
     suspend fun testCountStops() : Long {
         return staticDataDao.countStops()
+    }
+
+    suspend fun testTruncateStop() {
+        staticDataDao.truncateStop()
     }
 }

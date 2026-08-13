@@ -1,4 +1,4 @@
-package com.example.onetaptransit
+package com.example.onetaptransit.staticdata
 
 import androidx.room3.ColumnInfo
 import androidx.room3.Dao
@@ -18,29 +18,6 @@ import androidx.room3.RoomDatabase
 //@ColumnTypeConverters(Converters::class)
 abstract class StaticDataDB : RoomDatabase() {
     abstract fun staticDataDao(): StaticDataDao
-}
-
-@Dao
-interface StaticDataDao {
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun InsertStop(stop: Stop): Long
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun InsertStops(stops: List<Stop>) : List<Long>
-
-    @Query(
-        """
-            SELECT * from Stop
-        """
-    )
-    suspend fun getStopTest() : List<Stop>
-
-    @Query(
-        """
-            SELECT count(*) from Stop
-        """
-    )
-    suspend fun countStops() : Long
 }
 @Entity
 data class Stop(

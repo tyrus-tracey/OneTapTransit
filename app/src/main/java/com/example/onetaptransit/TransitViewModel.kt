@@ -4,6 +4,9 @@ import android.content.Context
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.onetaptransit.staticdata.StaticDataRepository
+import com.example.onetaptransit.staticdata.Stop
 import com.google.transit.realtime.GtfsRealtime.FeedMessage
 import com.jsoizo.kotlincsv.csvReader
 import com.jsoizo.kotlincsv.reader.read
@@ -77,19 +80,19 @@ class TransitViewModel @Inject constructor(
             zip.entry(Path("stops.txt")) {
                 val reader = csvReader()
                 reader.read(source = readToSource()) { rows ->
-                    rows.withHeader().toList().subList(0,100).forEach {
-                        stops.add(Stop(
-                            it["stop_id"] ?: "--",
-                            it["stop_code"] ?: "--",
-                            it["stop_name"] ?: "--",
-                            it["zone_id"] ?: "--"
+                    rows.withHeader().toList().forEach {
+                        stops.add(
+                            Stop(
+                                it["stop_id"] ?: "--",
+                                it["stop_code"] ?: "--",
+                                it["stop_name"] ?: "--",
+                                it["zone_id"] ?: "--"
                             )
                         )
                     }
                 }
 
             }
-
             val rownums = repo.testInsertMultiple(stops)
             Log.d("INSERT", "Inserted rows ${rownums.first()} to ${rownums.last()}")
             onProcessComplete()
@@ -105,6 +108,14 @@ class TransitViewModel @Inject constructor(
             Log.d("TRACE", "- - - QUERY END - - -")
 
             Log.d("QUERY RESPONSE", "There are ${repo.testCountStops()} stops.")
+        }
+    }
+
+    fun truncateTest(onProcessComplete: () -> Unit) {
+        viewModelScope.launch {
+            Log.d("TRACE", "- - - TRUNCATE START - - -")
+            repo.testTruncateStop()
+            Log.d("TRACE", "- - - TRUNCATE START - - -")
         }
     }
 
