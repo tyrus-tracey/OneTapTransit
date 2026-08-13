@@ -1,13 +1,9 @@
 package com.example.onetaptransit.staticdata
 
 import androidx.room3.ColumnInfo
-import androidx.room3.Dao
 import androidx.room3.Database
 import androidx.room3.Entity
-import androidx.room3.Insert
-import androidx.room3.OnConflictStrategy
 import androidx.room3.PrimaryKey
-import androidx.room3.Query
 import androidx.room3.RoomDatabase
 
 @Database(

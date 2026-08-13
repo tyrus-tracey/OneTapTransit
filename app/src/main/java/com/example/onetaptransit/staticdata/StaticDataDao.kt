@@ -1,6 +1,5 @@
 package com.example.onetaptransit.staticdata
 
-import androidx.annotation.WorkerThread
 import androidx.room3.Dao
 import androidx.room3.Insert
 import androidx.room3.OnConflictStrategy
