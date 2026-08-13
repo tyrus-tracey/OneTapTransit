@@ -1,11 +1,14 @@
-package com.example.onetaptransit.ui.theme
+package com.example.onetaptransit
 
 import android.content.Context
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.onetaptransit.BuildConfig
 import com.google.transit.realtime.GtfsRealtime.FeedMessage
+import com.jsoizo.kotlincsv.csvReader
+import com.jsoizo.kotlincsv.reader.read
+import com.jsoizo.kotlincsv.reader.withHeader
+import dagger.hilt.android.lifecycle.HiltViewModel
 import de.jonasbroeckmann.kzip.Zip
 import de.jonasbroeckmann.kzip.open
 import kotlinx.coroutines.Dispatchers
@@ -18,10 +21,13 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.net.URL
 import kotlinx.io.files.Path
-import kotlinx.io.readString
+import javax.inject.Inject
 
 
-class TransitViewModel : ViewModel() {
+@HiltViewModel
+class TransitViewModel @Inject constructor(
+    private val repo: StaticDataRepository
+) : ViewModel() {
     private val _transitState = MutableStateFlow(TransitState())
     val transitState: StateFlow<TransitState> = _transitState.asStateFlow()
 
@@ -66,12 +72,40 @@ class TransitViewModel : ViewModel() {
                 level = Zip.CompressionLevel.Default
             )
 
-            zip.entry(Path("agency.txt")) {
-                Log.d("ZIP", readToSource().readString())
+            val stops = mutableListOf<Stop>()
+
+            zip.entry(Path("stops.txt")) {
+                val reader = csvReader()
+                reader.read(source = readToSource()) { rows ->
+                    rows.withHeader().toList().subList(0,100).forEach {
+                        stops.add(Stop(
+                            it["stop_id"] ?: "--",
+                            it["stop_code"] ?: "--",
+                            it["stop_name"] ?: "--",
+                            it["zone_id"] ?: "--"
+                            )
+                        )
+                    }
+                }
+
             }
+
+            val rownums = repo.testInsertMultiple(stops)
+            Log.d("INSERT", "Inserted rows ${rownums.first()} to ${rownums.last()}")
             onProcessComplete()
         }
 
+    }
+
+    fun queryTest(onProcessComplete: () -> Unit) {
+        viewModelScope.launch {
+            Log.d("TRACE", "- - - QUERY START - - -")
+            val test_response = repo.testQuery()
+            Log.d("QUERY RESPONSE", test_response.toString())
+            Log.d("TRACE", "- - - QUERY END - - -")
+
+            Log.d("QUERY RESPONSE", "There are ${repo.testCountStops()} stops.")
+        }
     }
 
     private fun translinkAPIRequest_TripUpdate() : URL {

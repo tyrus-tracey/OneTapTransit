@@ -3,7 +3,8 @@ import java.util.Properties
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
-    //id("com.google.devtools.ksp") version "2.3.10"
+    id("com.google.devtools.ksp")
+    id("com.google.dagger.hilt.android")
 }
 
 android {
@@ -44,8 +45,8 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
     buildFeatures {
         compose = true
@@ -73,7 +74,9 @@ dependencies {
     val v_gtfs_bindings = "0.2.0"
     val v_viewmodel     = "2.11.0"
     val v_kzip          = "2.0.0"
-    //val v_room          = "3.0.1"
+    val v_room          = "3.0.1"
+    val v_dagger_hilt   = "2.60.1"
+    val v_kotlin_csv    = "2.0.0"
     //noinspection UseTomlInstead
     implementation("org.jetbrains.kotlinx:kotlinx-io-core:$v_kotlinx_io")
     //noinspection UseTomlInstead
@@ -83,7 +86,13 @@ dependencies {
     //noinspection UseTomlInstead
     implementation("de.jonasbroeckmann.kzip:kzip:$v_kzip")
     //noinspection UseTomlInstead
-    //implementation("androidx.room3:room3-runtime:$v_room")
+    implementation("androidx.room3:room3-runtime:$v_room")
     //noinspection UseTomlInstead
-    //ksp("androidx.room3:room3-compiler:$v_room")
+    ksp("androidx.room3:room3-compiler:$v_room")
+    //noinspection UseTomlInstead
+    implementation("com.google.dagger:hilt-android:$v_dagger_hilt")
+    //noinspection UseTomlInstead
+    ksp("com.google.dagger:hilt-android-compiler:$v_dagger_hilt")
+    //noinspection UseTomlInstead
+    implementation("com.jsoizo:kotlin-csv:$v_kotlin_csv")
 }
