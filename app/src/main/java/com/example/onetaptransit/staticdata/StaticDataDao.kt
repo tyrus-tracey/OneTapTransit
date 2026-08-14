@@ -13,6 +13,9 @@ interface StaticDataDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun InsertStops(stops: List<Stop>) : List<Long>
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun InsertStopsBlocking(stops: List<Stop>) : List<Long>
+
     @Query(
         """
             SELECT * from Stop

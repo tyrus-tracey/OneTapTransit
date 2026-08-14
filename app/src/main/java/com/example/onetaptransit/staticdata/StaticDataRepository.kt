@@ -14,6 +14,10 @@ class StaticDataRepository @Inject constructor(
         return staticDataDao.InsertStops(stops)
     }
 
+    fun testInsertMultipleBlocking(stops: List<Stop>) : List<Long> {
+        return staticDataDao.InsertStopsBlocking(stops)
+    }
+
     suspend fun testCountStops() : Long {
         return staticDataDao.countStops()
     }

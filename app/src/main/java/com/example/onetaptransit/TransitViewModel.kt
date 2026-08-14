@@ -74,26 +74,50 @@ class TransitViewModel @Inject constructor(
                 level = Zip.CompressionLevel.Default
             )
 
-            val stops = mutableListOf<Stop>()
+            var n_batches = 1
+            var num_rows : Long = 0
+            val buf_size = 500
+            val buf_stops = ArrayList<Stop>(buf_size)
 
-            zip.entry(Path("stops.txt")) {
-                val reader = csvReader()
-                reader.read(source = readToSource()) { rows ->
-                    rows.withHeader().toList().forEach {
-                        stops.add(
-                            Stop(
-                                it["stop_id"] ?: "--",
-                                it["stop_code"] ?: "--",
-                                it["stop_name"] ?: "--",
-                                it["zone_id"] ?: "--"
+            withContext(Dispatchers.IO) {
+                zip.entry(Path("stops.txt")) {
+                    val reader = csvReader()
+                    reader.read(source = readToSource()) { rows ->
+                        Log.d("TRACE", "- - - BEGIN READ - - -")
+                        rows.withHeader().forEach { row ->
+                            buf_stops.add(
+                                Stop(
+                                    row["stop_id"] ?: "--",
+                                    row["stop_code"] ?: "--",
+                                    row["stop_name"] ?: "--",
+                                    row["zone_id"] ?: "--"
+                                )
                             )
-                        )
+                            if (buf_stops.size >= buf_size) {
+                                val inserts = repo.testInsertMultipleBlocking(buf_stops)
+                                val f = inserts.first()
+                                val l = inserts.last()
+                                num_rows += (l - f)
+                                Log.d("BATCH INSERT", "Batch $n_batches: $num_rows rows.")
+                                n_batches += 1
+                                buf_stops.clear()
+                                buf_stops.ensureCapacity(buf_size)
+                            }
+                        }
+                        if (!buf_stops.isEmpty()) {
+                            val inserts = repo.testInsertMultipleBlocking(buf_stops)
+                            val f = inserts.first()
+                            val l = inserts.last()
+                            Log.d("BATCH INSERT", "Batch $n_batches: $num_rows rows.")
+                            num_rows += (l - f)
+                        }
+                        buf_stops.clear()
                     }
                 }
 
             }
-            val rownums = repo.testInsertMultiple(stops)
-            Log.d("INSERT", "Inserted rows ${rownums.first()} to ${rownums.last()}")
+
+            Log.d("INSERT", "Inserted $num_rows total rows across $n_batches batches.")
             onProcessComplete()
         }
 
