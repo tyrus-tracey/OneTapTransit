@@ -2,13 +2,15 @@ package com.example.onetaptransit.staticdata
 
 import androidx.room3.ColumnInfo
 import androidx.room3.Database
+import androidx.room3.Embedded
 import androidx.room3.Entity
 import androidx.room3.PrimaryKey
+import androidx.room3.Relation
 import androidx.room3.RoomDatabase
 
 @Database(
-    entities = [Stop::class],
-    version = 2,
+    entities = [Stop::class, StopTime::class],
+    version = 3,
     exportSchema = false
 )
 //@ColumnTypeConverters(Converters::class)
@@ -23,6 +25,26 @@ data class Stop(
     @ColumnInfo("zone_id") val zoneID: String
 )
 
+// A Stop can correspond to many StopTime records
+// TODO: Create a Time converter for arrival/departure time
+@Entity(primaryKeys = ["trip_id", "stop_sequence"])
+data class StopTime(
+    @ColumnInfo("trip_id") val tripID: String,
+    @ColumnInfo("stop_sequence") val stopSequence: Int,
+    @ColumnInfo("arrival_time") val arrivalTime: String,
+    @ColumnInfo("departure_time") val departureTime: String,
+    @ColumnInfo("stop_id") val stopID : String,
+)
+
+data class StopWithStopTimes(
+    @Embedded val stop: Stop,
+    @Relation(
+        parentColumns = ["stop_id"],    // from Stop
+        entityColumns = ["stop_id"]     // from StopTime
+    )
+    val stopTimes: List<StopTime>
+)
+
 //object Converters {
 //    @ColumnTypeConverter
 //    fun fromTimestamp(value: Long?): Date? {
@@ -35,11 +57,3 @@ data class Stop(
 //    }
 //}
 
-//@Entity(primaryKeys = ["trip_id", "stop_sequence"])
-//data class StopTimes(
-//    @ColumnInfo("trip_id") val tripID: Int,
-//    @ColumnInfo("stop_sequence") val stopSequence: Int,
-//    @ColumnInfo("arrival_time") val arrivalTime: Date,
-//    @ColumnInfo("departure_time") val departureTime: Date,
-//    @ColumnInfo("stop_id") val stopID : Int,
-//)
