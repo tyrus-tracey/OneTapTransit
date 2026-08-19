@@ -26,8 +26,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.io.files.Path
 import java.io.File
-import java.time.ZoneId
-import java.time.Instant
 import javax.inject.Inject
 
 
@@ -115,13 +113,9 @@ class TransitViewModel @Inject constructor(
             if (test_response.isEmpty()) {
                 Log.d("QUERY ERROR", "ERORR: Empty response.")
             } else {
-                val next_arrival = test_response.first()
-                val localtime = Instant.ofEpochSecond(next_arrival.arrivalTime)
-                    .atZone(ZoneId.systemDefault())
-                    .toLocalTime()
-                    .toString()
+                val res: StopTime = test_response.first()
                 Log.d("QUERY RESPONSE", test_response.toString())
-                Log.d("RESULT", localtime)
+                Log.d("RESULT", res.arrivalTime.toString())
                 Log.d("TRACE", "- - - QUERY END - - -")
             }
         }

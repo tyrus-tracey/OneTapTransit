@@ -1,19 +1,22 @@
 package com.example.onetaptransit.staticdata
 
 import androidx.room3.ColumnInfo
+import androidx.room3.ColumnTypeConverter
+import androidx.room3.ColumnTypeConverters
 import androidx.room3.Database
 import androidx.room3.Embedded
 import androidx.room3.Entity
 import androidx.room3.PrimaryKey
 import androidx.room3.Relation
 import androidx.room3.RoomDatabase
+import com.example.onetaptransitprivate.ServiceTime
 
 @Database(
     entities = [Route::class, Trip::class, Stop::class, StopTime::class],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
-//@ColumnTypeConverters(Converters::class)
+@ColumnTypeConverters(Converters::class)
 abstract class StaticDataDB : RoomDatabase() {
     abstract fun staticDataDao(): StaticDataDao
 }
@@ -39,8 +42,8 @@ data class Trip(
 data class StopTime(
     @ColumnInfo("trip_id") val tripID: String,
     @ColumnInfo("stop_sequence") val stopSequence: Int,
-    @ColumnInfo("arrival_time") val arrivalTime: Long, //TODO: create Time converter
-    @ColumnInfo("departure_time") val departureTime: Long, //TODO: create Time converter
+    @ColumnInfo("arrival_time") val arrivalTime: ServiceTime,
+    @ColumnInfo("departure_time") val departureTime: ServiceTime,
     @ColumnInfo("stop_id") val stopID : String,
 )
 
@@ -82,7 +85,27 @@ data class StopWithStopTimes(
     val stopTimes: List<StopTime>
 )
 
-//object Converters {
+object Converters {
+//    @ColumnTypeConverter
+//    fun stringToServiceTime(value: String?) : ServiceTime? {
+//        return value?.let { return ServiceTime(value) }
+//    }
+//
+//    @ColumnTypeConverter
+//    fun serviceTimeToString(serviceTime: ServiceTime?) : String? {
+//        return serviceTime?.let { return serviceTime.toString() }
+//    }
+
+    @ColumnTypeConverter
+    fun longToServiceTime(value: Long?) : ServiceTime? {
+        return value?.let { return ServiceTime(value) }
+    }
+
+    @ColumnTypeConverter
+    fun serviceTimeToLong(serviceTime: ServiceTime?) : Long? {
+        return serviceTime?.let { return serviceTime.time }
+    }
+
 //    @ColumnTypeConverter
 //    fun fromTimestamp(value: Long?): Date? {
 //        return value?.let { Date(it) }
@@ -92,7 +115,7 @@ data class StopWithStopTimes(
 //    fun dateToTimestamp(date: Date?): Long? {
 //        return date?.time
 //    }
-
+//
 //    @ColumnTypeConverter
 //    fun timeToEpoch(time: String?) : Long? {
 //        val time_format = DateTimeFormatter.ofPattern("H:m:s a")
@@ -103,5 +126,5 @@ data class StopWithStopTimes(
 //            )
 //        }
 //    }
-//}
+}
 

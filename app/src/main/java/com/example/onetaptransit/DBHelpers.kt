@@ -4,10 +4,7 @@ import com.example.onetaptransit.staticdata.Route
 import com.example.onetaptransit.staticdata.Stop
 import com.example.onetaptransit.staticdata.StopTime
 import com.example.onetaptransit.staticdata.Trip
-import java.time.LocalDate
-import java.time.LocalTime
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
+import kotlin.collections.joinToString
 
 fun dataRowToRoute(dataRow: LinkedHashMap<String, String>) : Route {
     return Route(
@@ -40,44 +37,23 @@ fun dataRowToStopTime(dataRow: LinkedHashMap<String, String>) : StopTime {
     return StopTime(
         dataRow["trip_id"] ?: "--",
         dataRow["stop_sequence"]?.toInt() ?: -1,
-        strtimeToEpoch(dataRow["arrival_time"]) ?: 0,
-        strtimeToEpoch(dataRow["departure_time"]) ?: 0,
+        ServiceTime(dataRow["arrival_time"] ?: "66:66:66"),
+        ServiceTime(dataRow["departure_time"]?: "66:66:66"),
         dataRow["stop_id"] ?: "--",
     )
 }
+class ServiceTime(
+    val time: Long
+) {
+    constructor(hours: Int, minutes: Int, seconds: Int) : this((hours * 3600).toLong() + (minutes * 60).toLong() + seconds)
+    constructor(time: String) : this(time.trim().split(":").map { it.toInt() })
+    private constructor(ints: List<Int>) : this(ints[0], ints[1], ints[2])
 
-fun strtimeToEpoch(time: String?) : Long? {
-    return time?.let {
-        try {
-            LocalTime.parse(time.trim(), TIME_FORMAT)
-                .atDate(LocalDate.now()) //TODO: use trip date from calendar.txt
-                .atZone(ZoneId.of(ZoneId.SHORT_IDS["PST"]))
-                .toEpochSecond()
-        }
-        // Handle value roll-over beyond 23:59:59
-        catch (e: java.time.format.DateTimeParseException) {
-            val segments = time.split(":")
-            var H = segments[0].toInt(); var M = segments[1].toInt(); var S = segments[2].toInt()
-            var rollover_seconds: Long = 0
+    fun hour(): Int { return (time / 3600).toInt() }
+    fun minute(): Int { return ((time % 3600) / 60).toInt() }
+    fun second(): Int { return (time % 60).toInt() }
 
-            if (H > 23) {
-                rollover_seconds += (H - 23) * 3600
-                H = 23
-            }
-            if (M > 59) {
-                rollover_seconds += (M - 59) * 60
-                M = 59
-            }
-            if (S > 59) {
-                rollover_seconds += (S - 59)
-                S = 59
-            }
-            LocalTime.parse("$H:$M:$S", TIME_FORMAT)
-                .atDate(LocalDate.now()) //TODO: use trip date from calendar.txt
-                .atZone(ZoneId.of(ZoneId.SHORT_IDS["PST"]))
-                .toEpochSecond() + rollover_seconds
-        }
+    override fun toString(): String {
+        return listOf(hour(), minute(), second()).joinToString(":")
     }
 }
-
-val TIME_FORMAT = DateTimeFormatter.ofPattern("H:m:s")
