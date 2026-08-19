@@ -4,11 +4,15 @@ import android.content.Context
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.onetaptransit.staticdata.Route
 import com.example.onetaptransit.staticdata.StaticDataRepository
 import com.example.onetaptransit.staticdata.Stop
 import com.example.onetaptransit.staticdata.StopTime
+import com.example.onetaptransit.staticdata.Trip
+import com.example.onetaptransitprivate.dataRowToRoute
 import com.example.onetaptransitprivate.dataRowToStop
 import com.example.onetaptransitprivate.dataRowToStopTime
+import com.example.onetaptransitprivate.dataRowToTrip
 import com.google.transit.realtime.GtfsRealtime.FeedMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.jonasbroeckmann.kzip.Zip
@@ -20,8 +24,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.File
 import kotlinx.io.files.Path
+import java.io.File
+import java.time.ZoneId
+import java.time.Instant
 import javax.inject.Inject
 
 
@@ -69,6 +75,20 @@ class TransitViewModel @Inject constructor(
             val zip = Zip.open(Path(zipDir))
 
             withContext(Dispatchers.IO) {
+                repo.importDataToDB<Route>(
+                    zip,
+                    "routes.txt",
+                    { routeRow -> dataRowToRoute(routeRow) },
+                    { routes -> repo.insertMultipleBlocking(routes)},
+                    true
+                )
+                repo.importDataToDB<Trip>(
+                zip,
+                    "trips.txt",
+                    { tripRow -> dataRowToTrip(tripRow) },
+                    { trips -> repo.insertMultipleBlocking(trips) },
+                    true
+                )
                 repo.importDataToDB<Stop>(
                     zip,
                     "stops.txt",
@@ -91,9 +111,19 @@ class TransitViewModel @Inject constructor(
     fun queryTest(onProcessComplete: () -> Unit) {
         viewModelScope.launch {
             Log.d("TRACE", "- - - QUERY START - - -")
-            val test_response = repo.testStopWithStopsQuery()
-            Log.d("RESPONSE", test_response.toString())
-            Log.d("TRACE", "- - - QUERY END - - -")
+            val test_response = repo.testGetNextScheduledArrivalFor51238()
+            if (test_response.isEmpty()) {
+                Log.d("QUERY ERROR", "ERORR: Empty response.")
+            } else {
+                val next_arrival = test_response.first()
+                val localtime = Instant.ofEpochSecond(next_arrival.arrivalTime)
+                    .atZone(ZoneId.systemDefault())
+                    .toLocalTime()
+                    .toString()
+                Log.d("QUERY RESPONSE", test_response.toString())
+                Log.d("RESULT", localtime)
+                Log.d("TRACE", "- - - QUERY END - - -")
+            }
         }
     }
 

@@ -9,14 +9,41 @@ import androidx.room3.Relation
 import androidx.room3.RoomDatabase
 
 @Database(
-    entities = [Stop::class, StopTime::class],
-    version = 3,
+    entities = [Route::class, Trip::class, Stop::class, StopTime::class],
+    version = 4,
     exportSchema = false
 )
 //@ColumnTypeConverters(Converters::class)
 abstract class StaticDataDB : RoomDatabase() {
     abstract fun staticDataDao(): StaticDataDao
 }
+
+
+@Entity
+data class Route(
+    @PrimaryKey @ColumnInfo("route_id") val routeID: String,
+    @ColumnInfo("route_short_name") val routeShortName: String,
+    @ColumnInfo("route_long_name") val routeLongName: String,
+    @ColumnInfo("route_type") val routeType: String //TODO: create Enum converter
+)
+
+@Entity
+data class Trip(
+    @PrimaryKey @ColumnInfo("trip_id") val tripID: String,
+    @ColumnInfo("route_id") val routeID: String,
+    @ColumnInfo("trip_headsign") val tripHeadsign: String,
+    @ColumnInfo("direction_id") val directionID: String //TODO: create Enum converter
+)
+
+@Entity(primaryKeys = ["trip_id", "stop_sequence"])
+data class StopTime(
+    @ColumnInfo("trip_id") val tripID: String,
+    @ColumnInfo("stop_sequence") val stopSequence: Int,
+    @ColumnInfo("arrival_time") val arrivalTime: Long, //TODO: create Time converter
+    @ColumnInfo("departure_time") val departureTime: Long, //TODO: create Time converter
+    @ColumnInfo("stop_id") val stopID : String,
+)
+
 @Entity
 data class Stop(
     @PrimaryKey @ColumnInfo("stop_id") val stopID: String,
@@ -25,17 +52,27 @@ data class Stop(
     @ColumnInfo("zone_id") val zoneID: String
 )
 
-// A Stop can correspond to many StopTime records
-// TODO: Create a Time converter for arrival/departure time
-@Entity(primaryKeys = ["trip_id", "stop_sequence"])
-data class StopTime(
-    @ColumnInfo("trip_id") val tripID: String,
-    @ColumnInfo("stop_sequence") val stopSequence: Int,
-    @ColumnInfo("arrival_time") val arrivalTime: String,
-    @ColumnInfo("departure_time") val departureTime: String,
-    @ColumnInfo("stop_id") val stopID : String,
+// A Route can correspond to many Trips
+data class RouteWithTrips(
+    @Embedded val route: Route,
+    @Relation(
+        parentColumns = ["route_id"],
+        entityColumns = ["route_id"]
+    )
+   val trips: List<Trip>
 )
 
+// A Trip can correspond to many StopTimes
+data class TripWithStopTimes(
+    @Embedded val trip: Trip,
+    @Relation(
+        parentColumns = ["trip_id"],
+        entityColumns = ["trip_id"]
+    )
+    val stopTimes: List<StopTime>
+)
+
+// A Stop can correspond to many StopTimes
 data class StopWithStopTimes(
     @Embedded val stop: Stop,
     @Relation(
@@ -54,6 +91,17 @@ data class StopWithStopTimes(
 //    @ColumnTypeConverter
 //    fun dateToTimestamp(date: Date?): Long? {
 //        return date?.time
+//    }
+
+//    @ColumnTypeConverter
+//    fun timeToEpoch(time: String?) : Long? {
+//        val time_format = DateTimeFormatter.ofPattern("H:m:s a")
+//        return time?.let {
+//            LocalTime.parse(time, time_format).toEpochSecond(
+//                LocalDate.now(),
+//                ZoneOffset.of(ZoneId.systemDefault().id)
+//            )
+//        }
 //    }
 //}
 

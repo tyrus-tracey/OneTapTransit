@@ -15,6 +15,16 @@ class StaticDataRepository @Inject constructor(
 ) {
     suspend fun testQuery() = staticDataDao.getStopTest()
 
+    @JvmName("insertMultipleRoutesBlocking")
+    fun insertMultipleBlocking(routes: List<Route>) : List<Long> {
+        return staticDataDao.InsertRoutesBlocking(routes)
+    }
+
+    @JvmName("insertMultipleTripsBlocking")
+    fun insertMultipleBlocking(trips: List<Trip>) : List<Long> {
+        return staticDataDao.InsertTripsBlocking(trips)
+    }
+
     @JvmName("insertMultipleStopsBlocking")
     fun insertMultipleBlocking(stops: List<Stop>) : List<Long> {
         return staticDataDao.InsertStopsBlocking(stops)
@@ -28,11 +38,15 @@ class StaticDataRepository @Inject constructor(
         return staticDataDao.countStops()
     }
     suspend fun truncateAllTables() {
+        staticDataDao.truncateRoute()
+        staticDataDao.truncateTrip()
         staticDataDao.truncateStop()
         staticDataDao.truncateStopTime()
     }
 
     suspend fun testStopWithStopsQuery() = staticDataDao.getStopsWithStopTimes()
+
+    suspend fun testGetNextScheduledArrivalFor51238() = staticDataDao.testGetNextScheduledArrivalForStop(51238)
 
     suspend fun <EntityType> importDataToDB(
         dataArchive: Zip,
