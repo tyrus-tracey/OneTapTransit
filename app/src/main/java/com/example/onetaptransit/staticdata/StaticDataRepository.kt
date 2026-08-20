@@ -33,6 +33,10 @@ class StaticDataRepository @Inject constructor(
     fun insertMultipleBlocking(stop_times: List<StopTime>) : List<Long> {
         return staticDataDao.InsertStopTimesBlocking(stop_times)
     }
+    @JvmName("insertMultipleCalendarsBlocking")
+    fun insertMultipleBlocking(calendars: List<Calendar>) : List<Long> {
+        return staticDataDao.InsertCalendarsBlocking(calendars)
+    }
 
     suspend fun countAllStops() : Long {
         return staticDataDao.countStops()
@@ -56,7 +60,7 @@ class StaticDataRepository @Inject constructor(
         log_output: Boolean = false
     ) {
         val BUF_SIZE = 5000
-        var n_batches = 1
+        var n_batches = 0
         var n_rows : Long = 0
 
         fun insertAndClearBuffer(buf: ArrayList<EntityType>) : Long {
@@ -79,13 +83,13 @@ class StaticDataRepository @Inject constructor(
                 rows.withHeader().forEach { row ->
                     buf.add(dataRowToEntity(row))
                     if (buf.size >= BUF_SIZE) {
-                        n_rows += insertAndClearBuffer(buf)
                         n_batches += 1
+                        n_rows += insertAndClearBuffer(buf)
                     }
                 }
                 if (!buf.isEmpty()) {
-                    n_rows += insertAndClearBuffer(buf)
                     n_batches += 1
+                    n_rows += insertAndClearBuffer(buf)
                 }
                 buf.clear()
             }

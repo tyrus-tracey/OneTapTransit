@@ -21,6 +21,9 @@ interface StaticDataDao {
     fun InsertTripsBlocking(trips: List<Trip>) : List<Long>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun InsertCalendarsBlocking(calendars: List<Calendar>) : List<Long>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun InsertStopsBlocking(stops: List<Stop>) : List<Long>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)

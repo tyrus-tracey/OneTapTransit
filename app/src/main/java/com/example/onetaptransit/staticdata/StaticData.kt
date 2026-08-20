@@ -10,17 +10,19 @@ import androidx.room3.PrimaryKey
 import androidx.room3.Relation
 import androidx.room3.RoomDatabase
 import com.example.onetaptransitprivate.ServiceTime
+import com.example.onetaptransitprivate.ServiceWeekday
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 @Database(
-    entities = [Route::class, Trip::class, Stop::class, StopTime::class],
-    version = 5,
+    entities = [Route::class, Trip::class, Calendar::class, Stop::class, StopTime::class],
+    version = 6,
     exportSchema = false
 )
 @ColumnTypeConverters(Converters::class)
 abstract class StaticDataDB : RoomDatabase() {
     abstract fun staticDataDao(): StaticDataDao
 }
-
 
 @Entity
 data class Route(
@@ -36,6 +38,20 @@ data class Trip(
     @ColumnInfo("route_id") val routeID: String,
     @ColumnInfo("trip_headsign") val tripHeadsign: String,
     @ColumnInfo("direction_id") val directionID: String //TODO: create Enum converter
+)
+
+@Entity
+data class Calendar(
+    @PrimaryKey @ColumnInfo("service_id") val serviceID: String,
+    val monday: ServiceWeekday,
+    val tuesday: ServiceWeekday,
+    val wednesday: ServiceWeekday,
+    val thursday: ServiceWeekday,
+    val friday: ServiceWeekday,
+    val saturday: ServiceWeekday,
+    val sunday: ServiceWeekday,
+    @ColumnInfo("start_date") val startDate: LocalDate,
+    @ColumnInfo("end_date") val endDate: LocalDate
 )
 
 @Entity(primaryKeys = ["trip_id", "stop_sequence"])
@@ -86,16 +102,6 @@ data class StopWithStopTimes(
 )
 
 object Converters {
-//    @ColumnTypeConverter
-//    fun stringToServiceTime(value: String?) : ServiceTime? {
-//        return value?.let { return ServiceTime(value) }
-//    }
-//
-//    @ColumnTypeConverter
-//    fun serviceTimeToString(serviceTime: ServiceTime?) : String? {
-//        return serviceTime?.let { return serviceTime.toString() }
-//    }
-
     @ColumnTypeConverter
     fun longToServiceTime(value: Long?) : ServiceTime? {
         return value?.let { return ServiceTime(value) }
@@ -106,25 +112,36 @@ object Converters {
         return serviceTime?.let { return serviceTime.time }
     }
 
-//    @ColumnTypeConverter
-//    fun fromTimestamp(value: Long?): Date? {
-//        return value?.let { Date(it) }
-//    }
-//
-//    @ColumnTypeConverter
-//    fun dateToTimestamp(date: Date?): Long? {
-//        return date?.time
-//    }
-//
-//    @ColumnTypeConverter
-//    fun timeToEpoch(time: String?) : Long? {
-//        val time_format = DateTimeFormatter.ofPattern("H:m:s a")
-//        return time?.let {
-//            LocalTime.parse(time, time_format).toEpochSecond(
-//                LocalDate.now(),
-//                ZoneOffset.of(ZoneId.systemDefault().id)
-//            )
-//        }
-//    }
+    @ColumnTypeConverter
+    fun intToServiceWeekday(value: Int?) : ServiceWeekday? {
+        return value?.let {
+            ServiceWeekday(value)
+        }
+    }
+
+    @ColumnTypeConverter
+    fun serviceWeekdayToInt(serviceWeekday: ServiceWeekday?) : Int? {
+        return serviceWeekday?.let {
+            if (serviceWeekday.isInServiceEveryOccurrence()) {
+                return 1
+            } else {
+                return 0
+            }
+        }
+    }
+
+    @ColumnTypeConverter
+    fun stringToLocalDate(value: String?): LocalDate? {
+        return value?.let {
+            LocalDate.parse(value, DateTimeFormatter.BASIC_ISO_DATE)
+        }
+    }
+
+    @ColumnTypeConverter
+    fun localDateToString(date: LocalDate?) : String? {
+        return date?.let {
+            date.format(DateTimeFormatter.BASIC_ISO_DATE)
+        }
+    }
 }
 

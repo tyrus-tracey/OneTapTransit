@@ -1,9 +1,12 @@
 package com.example.onetaptransitprivate
 
+import com.example.onetaptransit.staticdata.Calendar
 import com.example.onetaptransit.staticdata.Route
 import com.example.onetaptransit.staticdata.Stop
 import com.example.onetaptransit.staticdata.StopTime
 import com.example.onetaptransit.staticdata.Trip
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import kotlin.collections.joinToString
 
 fun dataRowToRoute(dataRow: LinkedHashMap<String, String>) : Route {
@@ -24,6 +27,21 @@ fun dataRowToTrip(dataRow: LinkedHashMap<String, String>) : Trip {
     )
 }
 
+fun dataRowToCalendar(dataRow: LinkedHashMap<String, String>) : Calendar {
+    return Calendar(
+        dataRow["service_id"] ?: "--",
+        ServiceWeekday(dataRow["monday"] ?: "TERRIBLE ERROR"), //TODO: find suitable alternative if dataRow[] is null
+        ServiceWeekday(dataRow["tuesday"] ?: "TERRIBLE ERROR"),
+        ServiceWeekday(dataRow["wednesday"] ?: "TERRIBLE ERROR"),
+        ServiceWeekday(dataRow["thursday"] ?: "TERRIBLE ERROR"),
+        ServiceWeekday(dataRow["friday"] ?: "TERRIBLE ERROR"),
+        ServiceWeekday(dataRow["saturday"] ?: "TERRIBLE ERROR"),
+        ServiceWeekday(dataRow["sunday"] ?: "TERRIBLE ERROR"),
+        LocalDate.parse(dataRow["start_date"] ?: "TERRIBLE ERROR", DateTimeFormatter.BASIC_ISO_DATE),
+        LocalDate.parse(dataRow["end_date"] ?: "TERRIBLE ERROR", DateTimeFormatter.BASIC_ISO_DATE)
+    )
+}
+
 fun dataRowToStop(dataRow: LinkedHashMap<String, String>) : Stop {
     return Stop(
         dataRow["stop_id"] ?: "--",
@@ -37,11 +55,12 @@ fun dataRowToStopTime(dataRow: LinkedHashMap<String, String>) : StopTime {
     return StopTime(
         dataRow["trip_id"] ?: "--",
         dataRow["stop_sequence"]?.toInt() ?: -1,
-        ServiceTime(dataRow["arrival_time"] ?: "66:66:66"),
-        ServiceTime(dataRow["departure_time"]?: "66:66:66"),
+        ServiceTime(dataRow["arrival_time"] ?: "TERRIBLE ERROR"),   //TODO: find suitable alternative if dataRow[] is null
+        ServiceTime(dataRow["departure_time"]?: "TERRIBLE ERROR"),
         dataRow["stop_id"] ?: "--",
     )
 }
+
 class ServiceTime(
     val time: Long
 ) {
@@ -55,5 +74,27 @@ class ServiceTime(
 
     override fun toString(): String {
         return listOf(hour(), minute(), second()).joinToString(":")
+    }
+}
+
+class ServiceWeekday(operation: Int) {
+    val occurrence: ServiceOccurrence
+
+    constructor(operation: String) : this(operation.toInt())
+    init {
+        if (operation == 1) {
+            occurrence = ServiceOccurrence.IN_SERVICE_EVERY_OCCURRENCE
+        } else {
+            occurrence = ServiceOccurrence.NOT_IN_SERVICE_EVERY_OCCURRENCE
+        }
+    }
+
+    fun isInServiceEveryOccurrence() : Boolean {
+        return occurrence == ServiceOccurrence.IN_SERVICE_EVERY_OCCURRENCE
+    }
+
+    enum class ServiceOccurrence {
+        NOT_IN_SERVICE_EVERY_OCCURRENCE,
+        IN_SERVICE_EVERY_OCCURRENCE
     }
 }

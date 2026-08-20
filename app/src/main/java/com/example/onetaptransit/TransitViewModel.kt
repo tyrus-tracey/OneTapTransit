@@ -4,11 +4,13 @@ import android.content.Context
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.onetaptransit.staticdata.Calendar
 import com.example.onetaptransit.staticdata.Route
 import com.example.onetaptransit.staticdata.StaticDataRepository
 import com.example.onetaptransit.staticdata.Stop
 import com.example.onetaptransit.staticdata.StopTime
 import com.example.onetaptransit.staticdata.Trip
+import com.example.onetaptransitprivate.dataRowToCalendar
 import com.example.onetaptransitprivate.dataRowToRoute
 import com.example.onetaptransitprivate.dataRowToStop
 import com.example.onetaptransitprivate.dataRowToStopTime
@@ -85,6 +87,13 @@ class TransitViewModel @Inject constructor(
                     "trips.txt",
                     { tripRow -> dataRowToTrip(tripRow) },
                     { trips -> repo.insertMultipleBlocking(trips) },
+                    true
+                )
+                repo.importDataToDB<Calendar>(
+                    zip,
+                    "calendar.txt",
+                    { calendarRow -> dataRowToCalendar(calendarRow) },
+                    { calendars -> repo.insertMultipleBlocking(calendars) },
                     true
                 )
                 repo.importDataToDB<Stop>(
