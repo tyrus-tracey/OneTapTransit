@@ -1,12 +1,17 @@
 package com.example.onetaptransit.staticdata
 
 import android.util.Log
+import com.example.onetaptransitprivate.ServiceTime
 import com.jsoizo.kotlincsv.csvReader
 import com.jsoizo.kotlincsv.reader.read
 import com.jsoizo.kotlincsv.reader.withHeader
 import de.jonasbroeckmann.kzip.Zip
 import javax.inject.Inject
 import kotlinx.io.files.Path
+import java.time.LocalDate
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
 import kotlin.sequences.forEach
 
 class StaticDataRepository @Inject constructor(
@@ -50,7 +55,15 @@ class StaticDataRepository @Inject constructor(
 
     suspend fun testStopWithStopsQuery() = staticDataDao.getStopsWithStopTimes()
 
-    suspend fun testGetNextScheduledArrivalFor51238() = staticDataDao.testGetNextScheduledArrivalForStop(51238)
+    suspend fun testGetNextScheduledArrivalFor51238() : List<StopTime> {
+        val stopCode = 51238
+        val date = LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE).toString()
+        val time = ServiceTime(
+                LocalTime.now().truncatedTo(ChronoUnit.SECONDS).format(DateTimeFormatter.ISO_LOCAL_TIME)
+            ).time
+        return staticDataDao.testGetNextScheduledArrivalForStop (stopCode, date, time)
+    }
+
 
     suspend fun <EntityType> importDataToDB(
         dataArchive: Zip,

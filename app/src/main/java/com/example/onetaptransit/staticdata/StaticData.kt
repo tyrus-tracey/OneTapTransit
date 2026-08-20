@@ -16,7 +16,7 @@ import java.time.format.DateTimeFormatter
 
 @Database(
     entities = [Route::class, Trip::class, Calendar::class, Stop::class, StopTime::class],
-    version = 6,
+    version = 7,
     exportSchema = false
 )
 @ColumnTypeConverters(Converters::class)
@@ -35,6 +35,7 @@ data class Route(
 @Entity
 data class Trip(
     @PrimaryKey @ColumnInfo("trip_id") val tripID: String,
+    @ColumnInfo("service_id") val serviceID: String,
     @ColumnInfo("route_id") val routeID: String,
     @ColumnInfo("trip_headsign") val tripHeadsign: String,
     @ColumnInfo("direction_id") val directionID: String //TODO: create Enum converter
@@ -122,7 +123,7 @@ object Converters {
     @ColumnTypeConverter
     fun serviceWeekdayToInt(serviceWeekday: ServiceWeekday?) : Int? {
         return serviceWeekday?.let {
-            if (serviceWeekday.isInServiceEveryOccurrence()) {
+            if (serviceWeekday.isInServiceEveryWeek()) {
                 return 1
             } else {
                 return 0

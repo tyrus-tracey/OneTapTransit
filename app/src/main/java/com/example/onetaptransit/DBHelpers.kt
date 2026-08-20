@@ -21,6 +21,7 @@ fun dataRowToRoute(dataRow: LinkedHashMap<String, String>) : Route {
 fun dataRowToTrip(dataRow: LinkedHashMap<String, String>) : Trip {
     return Trip(
         dataRow["trip_id"] ?: "--",
+        dataRow["service_id"] ?: "--",
         dataRow["route_id"]  ?: "--",
         dataRow["trip_headsign"] ?: "--",
         dataRow["direction_id"]  ?: "--"
@@ -78,23 +79,23 @@ class ServiceTime(
 }
 
 class ServiceWeekday(operation: Int) {
-    val occurrence: ServiceOccurrence
+    val weeklyOperation: WeeklyOperation
 
     constructor(operation: String) : this(operation.toInt())
     init {
         if (operation == 1) {
-            occurrence = ServiceOccurrence.IN_SERVICE_EVERY_OCCURRENCE
+            weeklyOperation = WeeklyOperation.IN_SERVICE
         } else {
-            occurrence = ServiceOccurrence.NOT_IN_SERVICE_EVERY_OCCURRENCE
+            weeklyOperation = WeeklyOperation.NOT_IN_SERVICE
         }
     }
 
-    fun isInServiceEveryOccurrence() : Boolean {
-        return occurrence == ServiceOccurrence.IN_SERVICE_EVERY_OCCURRENCE
+    fun isInServiceEveryWeek() : Boolean {
+        return weeklyOperation == WeeklyOperation.IN_SERVICE
     }
 
-    enum class ServiceOccurrence {
-        NOT_IN_SERVICE_EVERY_OCCURRENCE,
-        IN_SERVICE_EVERY_OCCURRENCE
+    enum class WeeklyOperation {
+        NOT_IN_SERVICE,
+        IN_SERVICE
     }
 }

@@ -76,20 +76,24 @@ interface StaticDataDao {
     @Transaction
     @Query("""
         SELECT StopTime.*
-        from Route
-        inner join Trip
-            on Route.route_id = Trip.route_id
-        inner join StopTime
-            on StopTime.trip_id = Trip.trip_id
-        inner join Stop
-            on Stop.stop_id = StopTime.stop_id
+        FROM Stop
+        JOIN StopTime 
+            ON StopTime.stop_id = Stop.stop_id
+        JOIN Trip 
+            ON Trip.trip_id = StopTime.trip_id
+        JOIN Calendar 
+            ON Calendar.service_id = Trip.service_id
         WHERE 
-            Stop.stop_code = :stopCode
-            
-        ORDER BY StopTime.arrival_time DESC
+            Stop.stop_code = :stopCode AND
+            Calendar.thursday = 1 AND
+            Calendar.start_date <= :date AND
+            Calendar.end_date >= :date AND
+            StopTime.arrival_time >= :time
+        ORDER BY StopTime.arrival_time ASC
         LIMIT 1
     """)
+    //TODO: figure out way to query for any weekday
     suspend fun testGetNextScheduledArrivalForStop(
-        stopCode: Int
+        stopCode: Int, date: String, time: Long
     ): List<StopTime>
 }
