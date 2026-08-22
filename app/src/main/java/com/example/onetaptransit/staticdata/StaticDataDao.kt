@@ -75,7 +75,10 @@ interface StaticDataDao {
 
     @Transaction
     @Query("""
-        SELECT StopTime.*
+        SELECT Route.route_short_name, 
+                Trip.trip_id, Trip.trip_headsign, 
+                StopTime.arrival_time, StopTime.departure_time,
+                StopTime.stop_sequence
         FROM Stop
         JOIN StopTime 
             ON StopTime.stop_id = Stop.stop_id
@@ -83,17 +86,26 @@ interface StaticDataDao {
             ON Trip.trip_id = StopTime.trip_id
         JOIN Calendar 
             ON Calendar.service_id = Trip.service_id
+        JOIN Route
+            ON Route.route_id = Trip.route_id
         WHERE 
             Stop.stop_code = :stopCode AND
-            Calendar.thursday = 1 AND
+            CASE :weekday
+                WHEN 'Mon' THEN Calendar.monday
+                WHEN 'Tue' THEN Calendar.tuesday
+                WHEN 'Wed' THEN Calendar.wednesday
+                WHEN 'Thu' THEN Calendar.thursday
+                WHEN 'Fri' THEN Calendar.friday
+                WHEN 'Sat' THEN Calendar.saturday
+                WHEN 'Sun' THEN Calendar.sunday
+            END = 1 AND
             Calendar.start_date <= :date AND
             Calendar.end_date >= :date AND
             StopTime.arrival_time >= :time
         ORDER BY StopTime.arrival_time ASC
         LIMIT 1
     """)
-    //TODO: figure out way to query for any weekday
     suspend fun testGetNextScheduledArrivalForStop(
-        stopCode: Int, date: String, time: Long
-    ): List<StopTime>
+        stopCode: Int, date: String, weekday: String, time: Long
+    ): List<VehicleStopTime>
 }

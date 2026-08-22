@@ -10,6 +10,7 @@ import com.example.onetaptransit.staticdata.StaticDataRepository
 import com.example.onetaptransit.staticdata.Stop
 import com.example.onetaptransit.staticdata.StopTime
 import com.example.onetaptransit.staticdata.Trip
+import com.example.onetaptransit.staticdata.VehicleStopTime
 import com.example.onetaptransitprivate.dataRowToCalendar
 import com.example.onetaptransitprivate.dataRowToRoute
 import com.example.onetaptransitprivate.dataRowToStop
@@ -118,11 +119,11 @@ class TransitViewModel @Inject constructor(
     fun queryTest(onProcessComplete: () -> Unit) {
         viewModelScope.launch {
             Log.d("TRACE", "- - - QUERY START - - -")
-            val test_response = repo.testGetNextScheduledArrivalFor51238()
+            val test_response = repo.getNextScheduledArrival(62130)
             if (test_response.isEmpty()) {
                 Log.d("QUERY ERROR", "ERORR: Empty response.")
             } else {
-                val res: StopTime = test_response.first()
+                val res: VehicleStopTime = test_response.first()
                 Log.d("QUERY RESPONSE", test_response.toString())
                 Log.d("RESULT", res.arrivalTime.toString())
                 Log.d("TRACE", "- - - QUERY END - - -")

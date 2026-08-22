@@ -11,7 +11,9 @@ import kotlinx.io.files.Path
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
+import java.time.format.TextStyle
 import java.time.temporal.ChronoUnit
+import java.util.Locale
 import kotlin.sequences.forEach
 
 class StaticDataRepository @Inject constructor(
@@ -55,15 +57,17 @@ class StaticDataRepository @Inject constructor(
 
     suspend fun testStopWithStopsQuery() = staticDataDao.getStopsWithStopTimes()
 
-    suspend fun testGetNextScheduledArrivalFor51238() : List<StopTime> {
-        val stopCode = 51238
-        val date = LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE).toString()
+    suspend fun getNextScheduledArrival(stopCode: Int) : List<VehicleStopTime> {
+        val now = LocalDate.now()
+        val date = now.format(DateTimeFormatter.BASIC_ISO_DATE).toString()
+        val weekday = now.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.CANADA)
         val time = ServiceTime(
                 LocalTime.now().truncatedTo(ChronoUnit.SECONDS).format(DateTimeFormatter.ISO_LOCAL_TIME)
-            ).time
-        return staticDataDao.testGetNextScheduledArrivalForStop (stopCode, date, time)
-    }
+            )
 
+        Log.d("INPUT", listOf<String>(stopCode.toString(), date, weekday.toString(), time.toString()).toString())
+        return staticDataDao.testGetNextScheduledArrivalForStop(stopCode, date, weekday.toString(), time.time)
+    }
 
     suspend fun <EntityType> importDataToDB(
         dataArchive: Zip,

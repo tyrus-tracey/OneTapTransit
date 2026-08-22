@@ -102,6 +102,15 @@ data class StopWithStopTimes(
     val stopTimes: List<StopTime>
 )
 
+data class VehicleStopTime(
+    @ColumnInfo("route_short_name") val routeShortName: String,
+    @ColumnInfo("trip_headsign") val tripHeadsign: String,
+    @ColumnInfo("arrival_time") val arrivalTime: ServiceTime,
+    @ColumnInfo("departure_time") val departureTime: ServiceTime,
+    @ColumnInfo("trip_id") val tripID: String,
+    @ColumnInfo("stop_sequence") val stopSequence: Int
+)
+
 object Converters {
     @ColumnTypeConverter
     fun longToServiceTime(value: Long?) : ServiceTime? {
