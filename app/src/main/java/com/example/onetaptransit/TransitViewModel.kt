@@ -11,6 +11,7 @@ import com.example.onetaptransit.staticdata.Stop
 import com.example.onetaptransit.staticdata.StopTime
 import com.example.onetaptransit.staticdata.Trip
 import com.example.onetaptransit.staticdata.VehicleStopTime
+import com.example.onetaptransitprivate.ServiceTime
 import com.example.onetaptransitprivate.dataRowToCalendar
 import com.example.onetaptransitprivate.dataRowToRoute
 import com.example.onetaptransitprivate.dataRowToStop
@@ -36,7 +37,12 @@ import javax.inject.Inject
 class TransitViewModel @Inject constructor(
     private val repo: StaticDataRepository
 ) : ViewModel() {
-    private val _transitState = MutableStateFlow(TransitState())
+    private val _transitState = MutableStateFlow(
+        TransitState(nextArrival = VehicleStopTime(
+            "","", ServiceTime(0), ServiceTime(0), "", 0
+            )
+        )
+    )
     val transitState: StateFlow<TransitState> = _transitState.asStateFlow()
 
     fun updateRealtimeFeed(onProcessComplete: () -> Unit) {
@@ -116,18 +122,20 @@ class TransitViewModel @Inject constructor(
         }
     }
 
-    fun queryTest(onProcessComplete: () -> Unit) {
+    fun queryNextArrival(
+        onQueryResponse : (Result<VehicleStopTime>) -> Unit
+    ) {
         viewModelScope.launch {
-            Log.d("TRACE", "- - - QUERY START - - -")
-            val test_response = repo.getNextScheduledArrival(62130)
-            if (test_response.isEmpty()) {
-                Log.d("QUERY ERROR", "ERORR: Empty response.")
-            } else {
-                val res: VehicleStopTime = test_response.first()
-                Log.d("QUERY RESPONSE", test_response.toString())
-                Log.d("RESULT", res.arrivalTime.toString())
-                Log.d("TRACE", "- - - QUERY END - - -")
+            val response = runCatching {
+                val stopCode: Int = transitState.value.userEntryStopCode.toInt()
+                val nextArrival = repo.getNextScheduledArrival(stopCode)
+                nextArrival.first()
+            } .onSuccess {
+                setQuerySuccessState(true)
+            } .onFailure {
+                setQueryFailedState(true)
             }
+            onQueryResponse(response)
         }
     }
 
@@ -139,8 +147,27 @@ class TransitViewModel @Inject constructor(
         }
     }
 
+    fun updateUserEntryStopCode(newStopCode: String) {
+        _transitState.update { it.copy(userEntryStopCode = newStopCode) }
+    }
+
+    fun updateNextArrival(newArrival: VehicleStopTime) {
+        _transitState.update { it.copy(nextArrival = newArrival) }
+    }
+
+    fun setQuerySuccessState(newState: Boolean) {
+        _transitState.update { it.copy(eQuerySuccess = newState) }
+    }
+
+    fun setQueryFailedState(newState: Boolean) {
+        _transitState.update { it.copy(eQueryFailed = newState) }
+    }
 }
 
 data class TransitState(
-    var realtimeFeed: FeedMessage = FeedMessage.getDefaultInstance()
+    val realtimeFeed: FeedMessage = FeedMessage.getDefaultInstance(),
+    val userEntryStopCode: String = "",
+    val nextArrival: VehicleStopTime,
+    val eQuerySuccess: Boolean = false,
+    val eQueryFailed: Boolean = false
 )
