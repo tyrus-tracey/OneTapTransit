@@ -61,6 +61,7 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.hilt.common)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))
@@ -77,6 +78,8 @@ dependencies {
     val v_room          = "3.0.1"
     val v_dagger_hilt   = "2.60.1"
     val v_kotlin_csv    = "2.0.0"
+    val v_hilt_work     = "1.4.0"
+    val v_workmanager   = "2.8.1"
     //noinspection UseTomlInstead
     implementation("org.jetbrains.kotlinx:kotlinx-io-core:$v_kotlinx_io")
     //noinspection UseTomlInstead
@@ -95,4 +98,11 @@ dependencies {
     ksp("com.google.dagger:hilt-android-compiler:$v_dagger_hilt")
     //noinspection UseTomlInstead
     implementation("com.jsoizo:kotlin-csv:$v_kotlin_csv")
+    //noinspectoin UseTomlInstead
+    implementation("androidx.work:work-runtime-ktx:$v_workmanager")
+    //noinspectoin UseTomlInstead
+    implementation("androidx.hilt:hilt-work:$v_hilt_work")
+    //noinspection UseTomlInstead
+    ksp("androidx.hilt:hilt-compiler:$v_hilt_work")
+
 }

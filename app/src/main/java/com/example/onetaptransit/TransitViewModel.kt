@@ -3,32 +3,26 @@ package com.example.onetaptransit
 import android.content.Context
 import android.util.Log
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.asFlow
 import androidx.lifecycle.viewModelScope
-import com.example.onetaptransit.staticdata.Calendar
-import com.example.onetaptransit.staticdata.Route
+import androidx.work.ExistingWorkPolicy
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkInfo
+import androidx.work.WorkManager
+import com.example.onetaptransit.consts.REALTIME_PB_FILENAME
 import com.example.onetaptransit.staticdata.StaticDataRepository
-import com.example.onetaptransit.staticdata.Stop
-import com.example.onetaptransit.staticdata.StopTime
-import com.example.onetaptransit.staticdata.Trip
 import com.example.onetaptransit.staticdata.VehicleStopTime
+import com.example.onetaptransit.workers.RealtimeFeedFetcher
+import com.example.onetaptransit.workers.StaticDataDBImporter
+import com.example.onetaptransit.workers.StaticDataFetcher
 import com.example.onetaptransitprivate.ServiceTime
-import com.example.onetaptransitprivate.dataRowToCalendar
-import com.example.onetaptransitprivate.dataRowToRoute
-import com.example.onetaptransitprivate.dataRowToStop
-import com.example.onetaptransitprivate.dataRowToStopTime
-import com.example.onetaptransitprivate.dataRowToTrip
 import com.google.transit.realtime.GtfsRealtime.FeedMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
-import de.jonasbroeckmann.kzip.Zip
-import de.jonasbroeckmann.kzip.open
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import kotlinx.io.files.Path
 import java.io.File
 import javax.inject.Inject
 
@@ -45,80 +39,55 @@ class TransitViewModel @Inject constructor(
     )
     val transitState: StateFlow<TransitState> = _transitState.asStateFlow()
 
-    fun updateRealtimeFeed(onProcessComplete: () -> Unit) {
+    fun updateRealtimeFeed(context: Context, onProcessComplete: () -> Unit) {
+        val uniqueWorkName = "UPDATE_REALTIME_FEED"
         viewModelScope.launch {
-            val newFeed = withContext(Dispatchers.IO) {
-                APIRequestBuilder.tripUpdateRequest().openStream().use { inputStream ->
-                    FeedMessage.parseFrom(inputStream)
-                }
-            }
+            val realtimeFeedFetcher = OneTimeWorkRequestBuilder<RealtimeFeedFetcher>().build()
+            WorkManager.getInstance(context).beginUniqueWork(
+                uniqueWorkName,
+                ExistingWorkPolicy.KEEP,
+                realtimeFeedFetcher
+            ).enqueue()
 
-            for (entity in newFeed.entityList) {
-                if (entity.hasTripUpdate()) {
-                    Log.d("TRIP_UPDATE", entity.tripUpdate.toString())
-                }
-            }
+            WorkManager.getInstance(context).getWorkInfosForUniqueWorkLiveData(uniqueWorkName).asFlow()
+                .collect { workInfo ->
+                    val workState = workInfo.first().state
+                    if (workState == WorkInfo.State.SUCCEEDED) {
+                        val realtimeFeedFile = File(context.cacheDir, REALTIME_PB_FILENAME)
+                        val updatedFeed = FeedMessage.parseFrom(realtimeFeedFile.readBytes())
 
-            _transitState.update {
-                it.copy(realtimeFeed = newFeed)
-            }
-            onProcessComplete()
+                        _transitState.update {
+                            it.copy(realtimeFeed = updatedFeed)
+                        }
+
+                        val entityList = transitState.value.realtimeFeed.entityList
+                        for (entity in entityList) {
+                            if (entity.hasTripUpdate()) {
+                                Log.d("REALTIME ENTITY", entity.getTripUpdate().toString())
+                            }
+                        }
+                        onProcessComplete()
+                    }
+                }
         }
-
     }
 
     fun updateStaticData(context: Context, onProcessComplete: () -> Unit) {
+        val uniqueWorkName = "UPDATE_STATIC_DATA"
         viewModelScope.launch {
-            val zipFile = File(context.cacheDir, "staticData.zip")
-            withContext(Dispatchers.IO) {
-                APIRequestBuilder.gtfsStaticRequest().openStream().use { inputStream ->
-                    zipFile.outputStream().use { outputStream ->
-                        inputStream.copyTo(outputStream)
-                    }
-                }
-            }
+            val staticDataFetcher = OneTimeWorkRequestBuilder<StaticDataFetcher>().build()
+            val staticDataDBImporter = OneTimeWorkRequestBuilder<StaticDataDBImporter>().build()
 
-            val zipDir = zipFile.absolutePath
-            val zip = Zip.open(Path(zipDir))
+            WorkManager.getInstance(context).beginUniqueWork(
+                uniqueWorkName,
+                ExistingWorkPolicy.KEEP,
+                listOf(staticDataFetcher, staticDataDBImporter)
+            ).enqueue()
 
-            withContext(Dispatchers.IO) {
-                repo.importDataToDB<Route>(
-                    zip,
-                    "routes.txt",
-                    { routeRow -> dataRowToRoute(routeRow) },
-                    { routes -> repo.insertMultipleBlocking(routes)},
-                    true
-                )
-                repo.importDataToDB<Trip>(
-                zip,
-                    "trips.txt",
-                    { tripRow -> dataRowToTrip(tripRow) },
-                    { trips -> repo.insertMultipleBlocking(trips) },
-                    true
-                )
-                repo.importDataToDB<Calendar>(
-                    zip,
-                    "calendar.txt",
-                    { calendarRow -> dataRowToCalendar(calendarRow) },
-                    { calendars -> repo.insertMultipleBlocking(calendars) },
-                    true
-                )
-                repo.importDataToDB<Stop>(
-                    zip,
-                    "stops.txt",
-                    { stopRow -> dataRowToStop(stopRow) },
-                    { stops -> repo.insertMultipleBlocking(stops) },
-                    true
-                )
-                repo.importDataToDB<StopTime> (
-                    zip,
-                    "stop_times.txt",
-                    { stopTimeRow -> dataRowToStopTime(stopTimeRow) },
-                    { stopTimes -> repo.insertMultipleBlocking(stopTimes)},
-                    true
-                )
+            //when (WorkManager.getInstance(context).getWorkInfoById(staticDataFetcher.id).get().state) {}
+            if (WorkManager.getInstance(context).getWorkInfoById(staticDataFetcher.id).get().state.isFinished) {
+                onProcessComplete()
             }
-            onProcessComplete()
         }
     }
 

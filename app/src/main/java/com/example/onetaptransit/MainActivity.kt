@@ -60,7 +60,7 @@ class MainActivity : ComponentActivity() {
                                 "Realtime",
                                 "Realtime Downloaded",
                                 {
-                                    transitViewModel.updateRealtimeFeed() {
+                                    transitViewModel.updateRealtimeFeed(this@MainActivity) {
                                         realtimeUpdated = true
                                     }
                                 },
