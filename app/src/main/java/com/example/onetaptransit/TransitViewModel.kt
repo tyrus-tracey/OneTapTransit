@@ -32,6 +32,8 @@ class TransitViewModel @Inject constructor(
     private val repo: StaticDataRepository
 ) : ViewModel() {
     private val _transitState = MutableStateFlow(
+        //TODO: TransitState requires an initial value for nextArrival, review if
+        //  this default value makes sense or whether it should be nullable instead.
         TransitState(nextArrival = VehicleStopTime(
             "","", ServiceTime(0), ServiceTime(0), "", 0
             )
@@ -39,6 +41,10 @@ class TransitViewModel @Inject constructor(
     )
     val transitState: StateFlow<TransitState> = _transitState.asStateFlow()
 
+    /**
+     * Fetch feed from Translink API.
+     * Upon completion, dump feed to Log.
+     */
     fun updateRealtimeFeed(context: Context, onProcessComplete: () -> Unit) {
         val uniqueWorkName = "UPDATE_REALTIME_FEED"
         viewModelScope.launch {
@@ -49,6 +55,9 @@ class TransitViewModel @Inject constructor(
                 realtimeFeedFetcher
             ).enqueue()
 
+            // Create listener for when work is complete.
+            // TODO: getWorkInfos returns a list, from which I grab first(). seems a little weird,
+            //  would be nice if there was a method that only returns a single workInfo.
             WorkManager.getInstance(context).getWorkInfosForUniqueWorkLiveData(uniqueWorkName).asFlow()
                 .collect { workInfo ->
                     val workState = workInfo.first().state
@@ -72,6 +81,10 @@ class TransitViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Fetch static data from Translink API and import to DB.
+     * Upon completion, call onProcessComplete().
+     */
     fun updateStaticData(context: Context, onProcessComplete: () -> Unit) {
         val uniqueWorkName = "UPDATE_STATIC_DATA"
         viewModelScope.launch {
@@ -84,13 +97,21 @@ class TransitViewModel @Inject constructor(
                 listOf(staticDataFetcher, staticDataDBImporter)
             ).enqueue()
 
-            //when (WorkManager.getInstance(context).getWorkInfoById(staticDataFetcher.id).get().state) {}
-            if (WorkManager.getInstance(context).getWorkInfoById(staticDataFetcher.id).get().state.isFinished) {
-                onProcessComplete()
-            }
+            // Create listener for when work is complete.
+            WorkManager.getInstance(context).getWorkInfosForUniqueWorkLiveData(uniqueWorkName).asFlow()
+                .collect { workInfo ->
+                    val workState = workInfo.first().state
+                    if (workState == WorkInfo.State.SUCCEEDED) {
+                        onProcessComplete()
+                    }
+                }
         }
     }
 
+    /**
+     * Read user's inputted StopCode from ViewModel and query for the next scheduled bus arrival.
+     * Currently returns only the soonest vehicle out of the list of future stop times.
+     */
     fun queryNextArrival(
         onQueryResponse : (Result<VehicleStopTime>) -> Unit
     ) {
@@ -98,7 +119,7 @@ class TransitViewModel @Inject constructor(
             val response = runCatching {
                 val stopCode: Int = transitState.value.userEntryStopCode.toInt()
                 val nextArrival = repo.getNextScheduledArrival(stopCode)
-                nextArrival.first()
+                nextArrival.first() // soonest vehicle
             } .onSuccess {
                 setQuerySuccessState(true)
             } .onFailure {
@@ -108,11 +129,12 @@ class TransitViewModel @Inject constructor(
         }
     }
 
-    fun truncateTest(onProcessComplete: () -> Unit) {
+    fun truncateAllTables(onProcessComplete: () -> Unit) {
         viewModelScope.launch {
             Log.d("TRACE", "- - - TRUNCATE START - - -")
             repo.truncateAllTables()
             Log.d("TRACE", "- - - TRUNCATE END - - -")
+            onProcessComplete()
         }
     }
 

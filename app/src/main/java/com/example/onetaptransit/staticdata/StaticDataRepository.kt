@@ -6,7 +6,6 @@ import com.jsoizo.kotlincsv.csvReader
 import com.jsoizo.kotlincsv.reader.read
 import com.jsoizo.kotlincsv.reader.withHeader
 import de.jonasbroeckmann.kzip.Zip
-import javax.inject.Inject
 import kotlinx.io.files.Path
 import java.time.LocalDate
 import java.time.LocalTime
@@ -14,14 +13,11 @@ import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.time.temporal.ChronoUnit
 import java.util.Locale
-import kotlin.sequences.forEach
+import javax.inject.Inject
 
 class StaticDataRepository @Inject constructor(
-    private val staticDataDB: StaticDataDB,
     private val staticDataDao: StaticDataDao
 ) {
-    suspend fun testQuery() = staticDataDao.getStopTest()
-
     @JvmName("insertMultipleRoutesBlocking")
     fun insertMultipleBlocking(routes: List<Route>) : List<Long> {
         return staticDataDao.InsertRoutesBlocking(routes)
@@ -45,9 +41,6 @@ class StaticDataRepository @Inject constructor(
         return staticDataDao.InsertCalendarsBlocking(calendars)
     }
 
-    suspend fun countAllStops() : Long {
-        return staticDataDao.countStops()
-    }
     suspend fun truncateAllTables() {
         staticDataDao.truncateRoute()
         staticDataDao.truncateTrip()
@@ -55,8 +48,8 @@ class StaticDataRepository @Inject constructor(
         staticDataDao.truncateStopTime()
     }
 
-    suspend fun testStopWithStopsQuery() = staticDataDao.getStopsWithStopTimes()
-
+    /** For a given stop, return all of today's future scheduled stop times. */
+    // TODO: Query currently does not check against CalendarDates.
     suspend fun getNextScheduledArrival(stopCode: Int) : List<VehicleStopTime> {
         val now = LocalDate.now()
         val date = now.format(DateTimeFormatter.BASIC_ISO_DATE).toString()
@@ -69,6 +62,7 @@ class StaticDataRepository @Inject constructor(
         return staticDataDao.testGetNextScheduledArrivalForStop(stopCode, date, weekday.toString(), time.time)
     }
 
+    /** Import a given archived static data file to the Room DB. */
     suspend fun <EntityType> importDataToDB(
         dataArchive: Zip,
         dataFilename: String,
@@ -80,7 +74,8 @@ class StaticDataRepository @Inject constructor(
         var n_batches = 0
         var n_rows : Long = 0
 
-        fun insertAndClearBuffer(buf: ArrayList<EntityType>) : Long {
+        // Returns # of rows inserted into DB.
+        fun insertThenClearBuffer(buf: ArrayList<EntityType>) : Long {
             val inserts = insertBatchToDB(buf)
             val batch_insert_count = inserts.last() - inserts.first() + 1
 
@@ -101,12 +96,14 @@ class StaticDataRepository @Inject constructor(
                     buf.add(dataRowToEntity(row))
                     if (buf.size >= BUF_SIZE) {
                         n_batches += 1
-                        n_rows += insertAndClearBuffer(buf)
+                        n_rows += insertThenClearBuffer(buf)
                     }
                 }
+
+                // If buf still has data after reading the final row.
                 if (!buf.isEmpty()) {
                     n_batches += 1
-                    n_rows += insertAndClearBuffer(buf)
+                    n_rows += insertThenClearBuffer(buf)
                 }
                 buf.clear()
             }

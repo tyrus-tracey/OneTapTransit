@@ -74,7 +74,7 @@ class MainActivity : ComponentActivity() {
                                 "truncate stops",
                                 "done!",
                                 onButtonClick = {
-                                    transitViewModel.truncateTest() { }
+                                    transitViewModel.truncateAllTables() { }
                                 },
                                 false,
                                 false,

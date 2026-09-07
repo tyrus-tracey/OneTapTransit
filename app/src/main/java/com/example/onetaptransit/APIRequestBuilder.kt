@@ -4,7 +4,11 @@ import java.net.URL
 
 class APIRequestBuilder {
     companion object {
-        fun tripUpdateRequest() : URL {
+        fun gtfsStaticRequest() : URL {
+            return URL("https://gtfs-static.translink.ca/gtfs/google_transit.zip")
+        }
+
+        fun gtfsRealtimeRequest() : URL {
             val key = BuildConfig.TRANSLINK_API_KEY
             return URL(" https://gtfsapi.translink.ca/v3/gtfsrealtime?apikey=$key")
         }
@@ -17,9 +21,6 @@ class APIRequestBuilder {
         fun serviceAlertRequest() : URL {
             val key = BuildConfig.TRANSLINK_API_KEY
             return URL(" https://gtfsapi.translink.ca/v3/gtfsalerts?apikey=$key")
-        }
-        fun gtfsStaticRequest() : URL {
-            return URL("https://gtfs-static.translink.ca/gtfs/google_transit.zip")
         }
     }
 }

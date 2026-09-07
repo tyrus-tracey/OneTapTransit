@@ -7,7 +7,6 @@ import com.example.onetaptransit.staticdata.StopTime
 import com.example.onetaptransit.staticdata.Trip
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-import kotlin.collections.joinToString
 
 fun dataRowToRoute(dataRow: LinkedHashMap<String, String>) : Route {
     return Route(
@@ -62,6 +61,7 @@ fun dataRowToStopTime(dataRow: LinkedHashMap<String, String>) : StopTime {
     )
 }
 
+/** Converts H:M:S format into # of seconds elapsed since start of day, including when exceeding 23:59:59. */
 class ServiceTime(
     val time: Long
 ) {
@@ -78,6 +78,13 @@ class ServiceTime(
     }
 }
 
+/**
+ * Describes service availability for a given weekday, according to Calendar's defined date range.
+ * IN_SERVICE: Service is available for all instances in the date range.
+ * NOT_IN_SERVICE: Service is not available for instances in the date range.
+ *
+ * MUST check against CalendarDates for service exceptions.
+ */
 class ServiceWeekday(operation: Int) {
     val weeklyOperation: WeeklyOperation
 

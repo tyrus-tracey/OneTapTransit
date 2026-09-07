@@ -102,6 +102,7 @@ data class StopWithStopTimes(
     val stopTimes: List<StopTime>
 )
 
+// Details on when a vehicle makes a scheduled stop on its trip.
 data class VehicleStopTime(
     @ColumnInfo("route_short_name") val routeShortName: String,
     @ColumnInfo("trip_headsign") val tripHeadsign: String,

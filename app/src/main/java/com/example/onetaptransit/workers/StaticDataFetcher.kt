@@ -10,6 +10,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 
+/**
+ * Opens connection to Translink GTFS Static API and downloads static data zip file to cache.
+ * Returns Result.success() if download and writing operations succeed.
+ * Returns Result.failure() upon any throwable.
+ * TODO: do a Result.retry() on connection issue.
+ */
+
 class StaticDataFetcher(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx, params) {
     override suspend fun doWork(): Result {
         return withContext(Dispatchers.IO) {

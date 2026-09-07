@@ -29,20 +29,6 @@ interface StaticDataDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun InsertStopTimesBlocking(stop_times: List<StopTime>) : List<Long>
 
-    @Query(
-        """
-            SELECT * from Stop
-        """
-    )
-    suspend fun getStopTest() : List<Stop>
-
-    @Query(
-        """
-            SELECT count(*) from Stop
-        """
-    )
-    suspend fun countStops() : Long
-
     @Query("""
         DELETE from Route
     """
@@ -66,13 +52,8 @@ interface StaticDataDao {
     """)
     suspend fun truncateStopTime()
 
-    @Transaction
-    @Query("""
-        SELECT * from Stop
-        WHERE Stop.stop_id = 1248
-    """)
-    suspend fun getStopsWithStopTimes(): List<StopWithStopTimes>
-
+    /** Given a StopCode, date and time, return all of today's future scheduled arrivals. */
+    // TODO: Need to also consult CalendarDates to check for exceptions.
     @Transaction
     @Query("""
         SELECT Route.route_short_name, 

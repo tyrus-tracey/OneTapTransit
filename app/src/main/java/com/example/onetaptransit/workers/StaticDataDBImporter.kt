@@ -26,6 +26,11 @@ import kotlinx.coroutines.withContext
 import kotlinx.io.files.Path
 import java.io.File
 
+/**
+ * Imports downloaded GTFS static data files into Room DB.
+ * Returns Result.success() if all imports are successful.
+ * Returns Result.failure() upon any throwable.
+ */
 @HiltWorker
 class StaticDataDBImporter @AssistedInject constructor(
     @Assisted ctx: Context,
