@@ -6,15 +6,19 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.asFlow
 import androidx.lifecycle.viewModelScope
 import androidx.work.ExistingWorkPolicy
+import androidx.work.OneTimeWorkRequest
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
+import androidx.work.workDataOf
+import com.example.onetaptransit.consts.KEY_STATIC_TABLE_NAME
 import com.example.onetaptransit.consts.REALTIME_PB_FILENAME
 import com.example.onetaptransit.staticdata.StaticDataRepository
 import com.example.onetaptransit.staticdata.VehicleStopTime
 import com.example.onetaptransit.workers.RealtimeFeedFetcher
-import com.example.onetaptransit.workers.StaticDataDBImporter
 import com.example.onetaptransit.workers.StaticDataFetcher
+import com.example.onetaptransit.workers.StaticDataTableImporter
+import com.example.onetaptransit.workers.StaticDataTableName
 import com.example.onetaptransitprivate.ServiceTime
 import com.google.transit.realtime.GtfsRealtime.FeedMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -89,12 +93,24 @@ class TransitViewModel @Inject constructor(
         val uniqueWorkName = "UPDATE_STATIC_DATA"
         viewModelScope.launch {
             val staticDataFetcher = OneTimeWorkRequestBuilder<StaticDataFetcher>().build()
-            val staticDataDBImporter = OneTimeWorkRequestBuilder<StaticDataDBImporter>().build()
+            val workerList = mutableListOf<OneTimeWorkRequest>(staticDataFetcher)
+
+            // TODO: Parallelize these importers
+            for (table in StaticDataTableName.entries) {
+                val tableImporter = OneTimeWorkRequestBuilder<StaticDataTableImporter>()
+                    .setInputData(
+                        workDataOf(
+                            KEY_STATIC_TABLE_NAME to table.name
+                        )
+                    )
+                    .build()
+                workerList.addLast(tableImporter)
+            }
 
             WorkManager.getInstance(context).beginUniqueWork(
                 uniqueWorkName,
                 ExistingWorkPolicy.KEEP,
-                listOf(staticDataFetcher, staticDataDBImporter)
+                workerList
             ).enqueue()
 
             // Create listener for when work is complete.

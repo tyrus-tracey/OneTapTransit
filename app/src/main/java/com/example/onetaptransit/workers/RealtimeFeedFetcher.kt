@@ -28,7 +28,7 @@ class RealtimeFeedFetcher(ctx: Context, params: WorkerParameters) : CoroutineWor
                     }
                 }
             } catch (e: IOException) {
-                Log.e(RealtimeFeedFetcher::class.simpleName, "Failed to retrieve realtime feed, retrying...", e)
+                Log.e(RealtimeFeedFetcher::class.simpleName, e.message?:"Failed to retrieve realtime feed.")
                 return Result.retry()
             } catch (e: Error) {
                 Log.e(RealtimeFeedFetcher::class.simpleName, "Failed to retrieve realtime feed.", e)

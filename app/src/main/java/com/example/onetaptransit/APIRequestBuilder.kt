@@ -10,17 +10,17 @@ class APIRequestBuilder {
 
         fun gtfsRealtimeRequest() : URL {
             val key = BuildConfig.TRANSLINK_API_KEY
-            return URL(" https://gtfsapi.translink.ca/v3/gtfsrealtime?apikey=$key")
+            return URL("https://gtfsapi.translink.ca/v3/gtfsrealtime?apikey=$key")
         }
 
         fun positionUpdateRequest() : URL {
             val key = BuildConfig.TRANSLINK_API_KEY
-            return URL(" https://gtfsapi.translink.ca/v3/gtfsposition?apikey=$key")
+            return URL("https://gtfsapi.translink.ca/v3/gtfsposition?apikey=$key")
         }
 
         fun serviceAlertRequest() : URL {
             val key = BuildConfig.TRANSLINK_API_KEY
-            return URL(" https://gtfsapi.translink.ca/v3/gtfsalerts?apikey=$key")
+            return URL("https://gtfsapi.translink.ca/v3/gtfsalerts?apikey=$key")
         }
     }
 }

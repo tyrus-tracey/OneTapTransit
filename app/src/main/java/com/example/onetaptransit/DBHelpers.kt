@@ -106,3 +106,7 @@ class ServiceWeekday(operation: Int) {
         IN_SERVICE
     }
 }
+
+enum class StaticTable {
+    ROUTES, TRIPS, CALENDAR, CALENDAR_DATES, STOPS, STOP_TIMES
+}
