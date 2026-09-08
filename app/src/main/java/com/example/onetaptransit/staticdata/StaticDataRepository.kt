@@ -75,39 +75,35 @@ class StaticDataRepository @Inject constructor(
         var n_rows : Long = 0
 
         // Returns # of rows inserted into DB.
-        fun insertThenClearBuffer(buf: ArrayList<EntityType>) : Long {
-            val inserts = insertBatchToDB(buf)
-            val batch_insert_count = inserts.last() - inserts.first() + 1
-
-            if (log_output) Log.d("BATCH INSERT", "Batch $n_batches: $batch_insert_count rows.")
+        fun insertThenClearBuffer(buf: ArrayList<EntityType>) {
+            val insertedRows = insertBatchToDB(buf)
+            val batch_insert_count = insertedRows.last() - insertedRows.first() + 1
+            n_batches += 1
+            n_rows += batch_insert_count
+            if (log_output) Log.d(dataFilename.uppercase(), "Batch $n_batches: $batch_insert_count rows.   $n_rows total.")
 
             buf.clear()
             buf.ensureCapacity(BUF_SIZE)
-            return batch_insert_count
         }
 
         dataArchive.entry(Path(dataFilename)) {
             val buf = ArrayList<EntityType>(BUF_SIZE)
             val reader = csvReader()
             reader.read(source = readToSource()) { rows ->
-                if (log_output) Log.d("TRACE", "- - - BEGIN READ: ${dataFilename.uppercase()} - - -")
+                if (log_output) Log.d("importDataToDB", "- - - BEGIN READ: ${dataFilename.uppercase()} - - -")
 
                 rows.withHeader().forEach { row ->
                     buf.add(dataRowToEntity(row))
                     if (buf.size >= BUF_SIZE) {
-                        n_batches += 1
-                        n_rows += insertThenClearBuffer(buf)
+                        insertThenClearBuffer(buf)
                     }
                 }
 
-                // If buf still has data after reading the final row.
                 if (!buf.isEmpty()) {
-                    n_batches += 1
-                    n_rows += insertThenClearBuffer(buf)
+                    insertThenClearBuffer(buf)
                 }
-                buf.clear()
             }
-            if (log_output) Log.d("INSERT","${dataFilename.uppercase()}: Inserted $n_rows total rows across $n_batches batches.")
+            if (log_output) Log.d("importDataToDB","${dataFilename.uppercase()}: Inserted $n_rows total rows across $n_batches batches.")
         }
     }
 
