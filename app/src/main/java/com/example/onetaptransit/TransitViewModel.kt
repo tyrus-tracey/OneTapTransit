@@ -59,9 +59,8 @@ class TransitViewModel @Inject constructor(
                 realtimeFeedFetcher
             ).enqueue()
 
+
             // Create listener for when work is complete.
-            // TODO: getWorkInfos returns a list, from which I grab first(). seems a little weird,
-            //  would be nice if there was a method that only returns a single workInfo.
             WorkManager.getInstance(context).getWorkInfosForUniqueWorkLiveData(uniqueWorkName).asFlow()
                 .collect { workInfo ->
                     val workState = workInfo.first().state
@@ -86,16 +85,15 @@ class TransitViewModel @Inject constructor(
     }
 
     /**
-     * Fetch static data from Translink API and import to DB.
+     * Fetch static data from Translink API and import tables to DB.
      * Upon completion, call onProcessComplete().
      */
     fun updateStaticData(context: Context, onProcessComplete: () -> Unit) {
         val uniqueWorkName = "UPDATE_STATIC_DATA"
         viewModelScope.launch {
-            val staticDataFetcher = OneTimeWorkRequestBuilder<StaticDataFetcher>().build()
-            val workerList = mutableListOf<OneTimeWorkRequest>(staticDataFetcher)
+            val dataFetcher = OneTimeWorkRequestBuilder<StaticDataFetcher>().build()
+            val tableImporters = mutableListOf<OneTimeWorkRequest>()
 
-            // TODO: Parallelize these importers
             for (table in StaticDataTableName.entries) {
                 val tableImporter = OneTimeWorkRequestBuilder<StaticDataTableImporter>()
                     .setInputData(
@@ -104,20 +102,17 @@ class TransitViewModel @Inject constructor(
                         )
                     )
                     .build()
-                workerList.addLast(tableImporter)
+                tableImporters.addLast(tableImporter)
             }
 
-            WorkManager.getInstance(context).beginUniqueWork(
-                uniqueWorkName,
-                ExistingWorkPolicy.KEEP,
-                workerList
-            ).enqueue()
+            WorkManager.getInstance(context).beginUniqueWork(uniqueWorkName, ExistingWorkPolicy.KEEP, dataFetcher)
+                .then(tableImporters)
+                .enqueue()
 
             // Create listener for when work is complete.
             WorkManager.getInstance(context).getWorkInfosForUniqueWorkLiveData(uniqueWorkName).asFlow()
-                .collect { workInfo ->
-                    val workState = workInfo.first().state
-                    if (workState == WorkInfo.State.SUCCEEDED) {
+                .collect { workInfos ->
+                    if (workInfos.all { it.state == WorkInfo.State.SUCCEEDED } ) {
                         onProcessComplete()
                     }
                 }
