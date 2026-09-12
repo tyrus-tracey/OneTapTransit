@@ -6,6 +6,7 @@ import com.jsoizo.kotlincsv.csvReader
 import com.jsoizo.kotlincsv.reader.read
 import com.jsoizo.kotlincsv.reader.withHeader
 import de.jonasbroeckmann.kzip.Zip
+import kotlinx.io.buffered
 import kotlinx.io.files.Path
 import java.time.LocalDate
 import java.time.LocalTime
@@ -62,12 +63,21 @@ class StaticDataRepository @Inject constructor(
         return staticDataDao.testGetNextScheduledArrivalForStop(stopCode, date, weekday.toString(), time.time)
     }
 
-    /** Import a given archived static data file to the Room DB. */
+    /**
+     * Import a given archived static data file to the Room DB.
+     * INPUTS:
+     *  dataArchive: Zip object representing the actual archive file.
+     *  dataFilename: The filename of the file within dataArchive that is to be read.
+     *  dataRowToEntity: Function that converts a parsed row into an Entity recognizable by the DB.
+     *  insertBatchToDB: Function that inserts a batch of Entity objects into the DB.
+     *  onProgress: Function that displays current # of bytes read out of the total file size.
+     * */
     suspend fun <EntityType> importDataToDB(
         dataArchive: Zip,
         dataFilename: String,
         dataRowToEntity: (LinkedHashMap<String, String>) -> EntityType,
         insertBatchToDB: (List<EntityType>) -> List<Long>,
+        onProgress: (bytesRead: Long, totalBytes: Long) -> Unit = { _, _ -> },
         log_output: Boolean = false
     ) {
         val BUF_SIZE = 5000
@@ -89,7 +99,18 @@ class StaticDataRepository @Inject constructor(
         dataArchive.entry(Path(dataFilename)) {
             val buf = ArrayList<EntityType>(BUF_SIZE)
             val reader = csvReader()
-            reader.read(source = readToSource()) { rows ->
+            var totalBytesRead = 0L
+
+            val entrySource = readToSource()
+            val countingSource = CountingSource(
+                entrySource,
+                { bytesRead ->
+                    totalBytesRead += bytesRead
+                    onProgress(totalBytesRead, uncompressedSize.toLong())
+                }
+            ).buffered()
+
+            reader.read(source = countingSource) { rows ->
                 if (log_output) Log.d("importDataToDB", "- - - BEGIN READ: ${dataFilename.uppercase()} - - -")
 
                 rows.withHeader().forEach { row ->
@@ -104,6 +125,7 @@ class StaticDataRepository @Inject constructor(
                 }
             }
             if (log_output) Log.d("importDataToDB","${dataFilename.uppercase()}: Inserted $n_rows total rows across $n_batches batches.")
+            countingSource.close()
         }
     }
 

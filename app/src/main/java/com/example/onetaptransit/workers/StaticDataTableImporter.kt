@@ -56,7 +56,7 @@ class StaticDataTableImporter @AssistedInject constructor(
                             "routes.txt",
                             { routeRow -> dataRowToRoute(routeRow) },
                             { routes -> repo.insertMultipleBlocking(routes)},
-                            true
+                            log_output = true
                         )
                     }
                     StaticDataTableName.TRIPS -> {
@@ -65,7 +65,7 @@ class StaticDataTableImporter @AssistedInject constructor(
                             "trips.txt",
                             { tripRow -> dataRowToTrip(tripRow) },
                             { trips -> repo.insertMultipleBlocking(trips) },
-                            true
+                            log_output = true
                         )
                     }
                     StaticDataTableName.CALENDAR -> {
@@ -74,7 +74,7 @@ class StaticDataTableImporter @AssistedInject constructor(
                             "calendar.txt",
                             { calendarRow -> dataRowToCalendar(calendarRow) },
                             { calendars -> repo.insertMultipleBlocking(calendars) },
-                            true
+                            log_output = true
                         )
                     }
                     StaticDataTableName.CALENDAR_DATES -> { throw Error("Calendar date importer: To be implemented") }
@@ -84,7 +84,7 @@ class StaticDataTableImporter @AssistedInject constructor(
                             "stops.txt",
                             { stopRow -> dataRowToStop(stopRow) },
                             { stops -> repo.insertMultipleBlocking(stops) },
-                            true
+                            log_output = true
                         )
                     }
                     StaticDataTableName.STOP_TIMES -> {
@@ -93,7 +93,7 @@ class StaticDataTableImporter @AssistedInject constructor(
                             "stop_times.txt",
                             { stopTimeRow -> dataRowToStopTime(stopTimeRow) },
                             { stopTimes -> repo.insertMultipleBlocking(stopTimes)},
-                            true
+                            log_output = true
                         )
                     }
                 }
