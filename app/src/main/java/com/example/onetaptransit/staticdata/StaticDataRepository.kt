@@ -6,6 +6,7 @@ import com.jsoizo.kotlincsv.csvReader
 import com.jsoizo.kotlincsv.reader.read
 import com.jsoizo.kotlincsv.reader.withHeader
 import de.jonasbroeckmann.kzip.Zip
+import kotlinx.coroutines.CancellationException
 import kotlinx.io.buffered
 import kotlinx.io.files.Path
 import java.time.LocalDate
@@ -77,7 +78,8 @@ class StaticDataRepository @Inject constructor(
         dataFilename: String,
         dataRowToEntity: (LinkedHashMap<String, String>) -> EntityType,
         insertBatchToDB: (List<EntityType>) -> List<Long>,
-        onProgress: (bytesRead: Long, totalBytes: Long) -> Unit = { _, _ -> },
+        onProgress: (bytesReadSoFar: Long, totalBytes: Long) -> Unit = { _, _ -> },
+        isCancelled: () -> Boolean,
         log_output: Boolean = false
     ) {
         val BUF_SIZE = 5000
@@ -86,6 +88,9 @@ class StaticDataRepository @Inject constructor(
 
         // Returns # of rows inserted into DB.
         fun insertThenClearBuffer(buf: ArrayList<EntityType>) {
+            if (isCancelled()) {
+                throw CancellationException("$dataFilename import cancelled.")
+            }
             val insertedRows = insertBatchToDB(buf)
             val batch_insert_count = insertedRows.last() - insertedRows.first() + 1
             n_batches += 1
@@ -99,14 +104,12 @@ class StaticDataRepository @Inject constructor(
         dataArchive.entry(Path(dataFilename)) {
             val buf = ArrayList<EntityType>(BUF_SIZE)
             val reader = csvReader()
-            var totalBytesRead = 0L
 
             val entrySource = readToSource()
             val countingSource = CountingSource(
                 entrySource,
-                { bytesRead ->
-                    totalBytesRead += bytesRead
-                    onProgress(totalBytesRead, uncompressedSize.toLong())
+                { bytesReadSoFar ->
+                    onProgress(bytesReadSoFar, uncompressedSize.toLong())
                 }
             ).buffered()
 

@@ -9,8 +9,8 @@ import com.example.onetaptransit.consts.REALTIME_PB_FILENAME
 import com.google.transit.realtime.GtfsRealtime.FeedMessage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlinx.io.IOException
 import java.io.File
+import java.net.UnknownHostException
 
 /**
  * Opens connection to Translink GTFS Realtime API and downloads realtime feed protobuf to cache.
@@ -27,14 +27,10 @@ class RealtimeFeedFetcher(ctx: Context, params: WorkerParameters) : CoroutineWor
                         FeedMessage.parseFrom(inputStream)
                     }
                 }
-            } catch (e: IOException) {
-                Log.e(RealtimeFeedFetcher::class.simpleName, e.message?:"Failed to retrieve realtime feed.")
+            } catch (e: UnknownHostException) {
+                Log.e(RealtimeFeedFetcher::class.simpleName, e::class.simpleName + ": ${e.message}")
                 return Result.retry()
-            } catch (e: Error) {
-                Log.e(RealtimeFeedFetcher::class.simpleName, "Failed to retrieve realtime feed.", e)
-                return Result.failure()
             }
-
         try {
             val dataFilePath = File(applicationContext.cacheDir, REALTIME_PB_FILENAME)
             dataFilePath.setWritable(true)

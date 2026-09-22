@@ -5,8 +5,10 @@ import android.util.Log
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import androidx.work.workDataOf
 import com.example.onetaptransit.consts.KEY_STATIC_TABLE_NAME
 import com.example.onetaptransit.consts.STATIC_ZIP_FILENAME
+import com.example.onetaptransit.consts.WORKER_PROGRESS
 import com.example.onetaptransit.staticdata.Calendar
 import com.example.onetaptransit.staticdata.Route
 import com.example.onetaptransit.staticdata.StaticDataRepository
@@ -22,15 +24,18 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import de.jonasbroeckmann.kzip.Zip
 import de.jonasbroeckmann.kzip.open
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.io.files.Path
 import java.io.File
+import kotlin.math.roundToInt
 
 /**
  * Imports downloaded GTFS static data files into Room DB.
  * Input workData: KEY_STATIC_TABLE_NAME maps to a StaticDataTableName value (as a string) which is
  *      used to construct the table filename and select the correct data translation/insertion functions.
+ * Output workData: WORKER_PROGRESS maps to an integer representing # of bytes read so far / table file size.
  * Returns Result.success() if imports is successful.
  * Returns Result.failure() upon any throwable.
  */
@@ -47,6 +52,16 @@ class StaticDataTableImporter @AssistedInject constructor(
 
         val table = StaticDataTableName.fromString(inputData.getString(KEY_STATIC_TABLE_NAME) ?: "")
 
+        var prevImportProgress = 0
+        fun updateImportProgress(bytesReadSoFar: Long, totalBytes: Long) {
+            val importProgress = ((bytesReadSoFar.toDouble() / totalBytes.toDouble()) * 100).roundToInt()
+            if (importProgress != prevImportProgress) {
+                prevImportProgress = importProgress
+                setProgressAsync(workDataOf(WORKER_PROGRESS to importProgress))
+            }
+        }
+
+        val show_import_debug_output = false
         return withContext(Dispatchers.IO) {
             return@withContext try {
                 when (table) {
@@ -56,7 +71,11 @@ class StaticDataTableImporter @AssistedInject constructor(
                             "routes.txt",
                             { routeRow -> dataRowToRoute(routeRow) },
                             { routes -> repo.insertMultipleBlocking(routes)},
-                            log_output = true
+                            { bytesRead, totalBytes ->
+                                updateImportProgress(bytesRead, totalBytes)
+                            },
+                            { isStopped },
+                            show_import_debug_output
                         )
                     }
                     StaticDataTableName.TRIPS -> {
@@ -65,7 +84,11 @@ class StaticDataTableImporter @AssistedInject constructor(
                             "trips.txt",
                             { tripRow -> dataRowToTrip(tripRow) },
                             { trips -> repo.insertMultipleBlocking(trips) },
-                            log_output = true
+                            { bytesRead, totalBytes ->
+                                updateImportProgress(bytesRead, totalBytes)
+                            },
+                            { isStopped },
+                            show_import_debug_output
                         )
                     }
                     StaticDataTableName.CALENDAR -> {
@@ -74,17 +97,27 @@ class StaticDataTableImporter @AssistedInject constructor(
                             "calendar.txt",
                             { calendarRow -> dataRowToCalendar(calendarRow) },
                             { calendars -> repo.insertMultipleBlocking(calendars) },
-                            log_output = true
+                            { bytesRead, totalBytes ->
+                                updateImportProgress(bytesRead, totalBytes)
+                            },
+                            { isStopped },
+                            show_import_debug_output
                         )
                     }
-                    StaticDataTableName.CALENDAR_DATES -> { throw Error("Calendar date importer: To be implemented") }
+                    StaticDataTableName.CALENDAR_DATES -> {
+                        Log.d(id.toString(),"Calendar date importer: To be implemented")
+                    }
                     StaticDataTableName.STOPS -> {
                         repo.importDataToDB<Stop>(
                             zip,
                             "stops.txt",
                             { stopRow -> dataRowToStop(stopRow) },
                             { stops -> repo.insertMultipleBlocking(stops) },
-                            log_output = true
+                            { bytesReadSoFar, totalBytes ->
+                                updateImportProgress(bytesReadSoFar, totalBytes)
+                            },
+                            { isStopped },
+                            show_import_debug_output
                         )
                     }
                     StaticDataTableName.STOP_TIMES -> {
@@ -93,13 +126,19 @@ class StaticDataTableImporter @AssistedInject constructor(
                             "stop_times.txt",
                             { stopTimeRow -> dataRowToStopTime(stopTimeRow) },
                             { stopTimes -> repo.insertMultipleBlocking(stopTimes)},
-                            log_output = true
+                            { bytesRead, totalBytes ->
+                                updateImportProgress(bytesRead, totalBytes)
+                            },
+                            { isStopped },
+                            show_import_debug_output
                         )
                     }
                 }
                 Result.success()
-            } catch (throwable: Throwable) {
-                Log.e(StaticDataTableImporter::class.simpleName, "Failed to import static data to database.", throwable)
+            } catch (e: CancellationException) {
+              throw e
+            } catch (e: Exception) {
+                Log.e(StaticDataTableImporter::class.simpleName, e::class.simpleName + ": ${e.message}")
                 Result.failure()
             }
         }

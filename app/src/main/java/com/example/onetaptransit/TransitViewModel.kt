@@ -13,6 +13,9 @@ import androidx.work.WorkManager
 import androidx.work.workDataOf
 import com.example.onetaptransit.consts.KEY_STATIC_TABLE_NAME
 import com.example.onetaptransit.consts.REALTIME_PB_FILENAME
+import com.example.onetaptransit.consts.STATIC_DATA_IMPORT_UNIQUE_WORK_NAME
+import com.example.onetaptransit.consts.STATIC_DATA_TABLE_IMPORTER_TAG
+import com.example.onetaptransit.consts.WORKER_PROGRESS
 import com.example.onetaptransit.staticdata.StaticDataRepository
 import com.example.onetaptransit.staticdata.VehicleStopTime
 import com.example.onetaptransit.workers.RealtimeFeedFetcher
@@ -22,8 +25,8 @@ import com.example.onetaptransit.workers.StaticDataTableName
 import com.example.onetaptransitprivate.ServiceTime
 import com.google.transit.realtime.GtfsRealtime.FeedMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -43,7 +46,9 @@ class TransitViewModel @Inject constructor(
             )
         )
     )
-    val transitState: StateFlow<TransitState> = _transitState.asStateFlow()
+    private val _gtfsStaticDataImportState = MutableStateFlow(GTFSStaticDataImportProgressState())
+    val transitState = _transitState.asStateFlow()
+    val gtfsStaticDataImportState = _gtfsStaticDataImportState.asStateFlow()
 
     /**
      * Fetch feed from Translink API.
@@ -88,12 +93,17 @@ class TransitViewModel @Inject constructor(
      * Fetch static data from Translink API and import tables to DB.
      * Upon completion, call onProcessComplete().
      */
+    // Store scoped job so that process can be canceled, as calling WorkManager.cancelWork
+    //  won't stop the process the listeners are set up in.
+    private var importProgressObserver: Job? = null
     fun updateStaticData(context: Context, onProcessComplete: () -> Unit) {
-        val uniqueWorkName = "UPDATE_STATIC_DATA"
-        viewModelScope.launch {
+        importProgressObserver?.cancel()
+        importProgressObserver = viewModelScope.launch {
             val dataFetcher = OneTimeWorkRequestBuilder<StaticDataFetcher>().build()
             val tableImporters = mutableListOf<OneTimeWorkRequest>()
 
+            // Create list of import workers
+            // Importer tag + table name tags used to later identify these workers
             for (table in StaticDataTableName.entries) {
                 val tableImporter = OneTimeWorkRequestBuilder<StaticDataTableImporter>()
                     .setInputData(
@@ -101,17 +111,40 @@ class TransitViewModel @Inject constructor(
                             KEY_STATIC_TABLE_NAME to table.name
                         )
                     )
+                    .addTag(STATIC_DATA_TABLE_IMPORTER_TAG)
+                    .addTag(table.name)
                     .build()
                 tableImporters.addLast(tableImporter)
             }
 
-            WorkManager.getInstance(context).beginUniqueWork(uniqueWorkName, ExistingWorkPolicy.KEEP, dataFetcher)
+            // Start work chain of fetcher, then importers
+            WorkManager.getInstance(context).beginUniqueWork(
+                STATIC_DATA_IMPORT_UNIQUE_WORK_NAME,
+                ExistingWorkPolicy.KEEP,
+                dataFetcher
+            )
                 .then(tableImporters)
                 .enqueue()
 
-            // Create listener for when work is complete.
-            WorkManager.getInstance(context).getWorkInfosForUniqueWorkLiveData(uniqueWorkName).asFlow()
+            // Create listeners for work progress and completion state changes.
+            WorkManager.getInstance(context).getWorkInfosForUniqueWorkLiveData(STATIC_DATA_IMPORT_UNIQUE_WORK_NAME)
+                .asFlow()
                 .collect { workInfos ->
+                    // For each importer, listen to progress changes and update ViewModel
+                    val tableImporterInfos = workInfos.filter { it.tags.contains(STATIC_DATA_TABLE_IMPORTER_TAG) }
+                    for (tableImporterInfo in tableImporterInfos) {
+                        val tableTag = tableImporterInfo.tags.first { tag ->
+                            StaticDataTableName.entries.any { it.name == tag }
+                        }
+
+                        val table = StaticDataTableName.fromString(tableTag)
+                        val importProgress = tableImporterInfo.progress.getInt(WORKER_PROGRESS, 0)
+
+                        if (tableImporterInfo.state == WorkInfo.State.RUNNING) {
+                            updateImportProgress(table, importProgress, true)
+                        }
+                    }
+
                     if (workInfos.all { it.state == WorkInfo.State.SUCCEEDED } ) {
                         onProcessComplete()
                     }
@@ -149,6 +182,12 @@ class TransitViewModel @Inject constructor(
         }
     }
 
+    fun cancelStaticDataImport(context: Context) {
+        WorkManager.getInstance(context).cancelUniqueWork(STATIC_DATA_IMPORT_UNIQUE_WORK_NAME)
+        importProgressObserver?.cancel()
+        WorkManager.getInstance(context).pruneWork()
+    }
+
     fun updateUserEntryStopCode(newStopCode: String) {
         _transitState.update { it.copy(userEntryStopCode = newStopCode) }
     }
@@ -164,6 +203,42 @@ class TransitViewModel @Inject constructor(
     fun setQueryFailedState(newState: Boolean) {
         _transitState.update { it.copy(eQueryFailed = newState) }
     }
+
+    fun updateImportProgress(table: StaticDataTableName, progress: Int, show_debug: Boolean = false) {
+        if (!(progress in 0..100)) {
+            throw IllegalArgumentException("Invalid GTFS Static Data import progress value: $progress")
+        }
+
+        fun log_progress(tableName: String, progress: Int) {
+            Log.d(tableName, "Imported: " + progress + "%")
+        }
+
+        when (table) {
+            StaticDataTableName.ROUTES -> {
+                _gtfsStaticDataImportState.update { it.copy(progRoutes = progress) }
+                if (show_debug) log_progress(table.name, gtfsStaticDataImportState.value.progRoutes)
+            }
+            StaticDataTableName.TRIPS -> {
+                _gtfsStaticDataImportState.update { it.copy(progTrips = progress) }
+                if (show_debug) log_progress(table.name, gtfsStaticDataImportState.value.progTrips)
+            }
+            StaticDataTableName.CALENDAR -> {
+                _gtfsStaticDataImportState.update { it.copy(progCalendar = progress) }
+                if (show_debug) log_progress(table.name, gtfsStaticDataImportState.value.progCalendar)
+            }
+            StaticDataTableName.CALENDAR_DATES -> {
+                if (show_debug) Log.d("TransitViewModel", "updateImportProgress(): Handling for CALENDAR_DATES to be implemented.")
+            }
+            StaticDataTableName.STOPS -> {
+                _gtfsStaticDataImportState.update { it.copy(progStops = progress) }
+                if (show_debug) log_progress(table.name, gtfsStaticDataImportState.value.progStops)
+            }
+            StaticDataTableName.STOP_TIMES -> {
+                _gtfsStaticDataImportState.update { it.copy(progStopTimes = progress) }
+                if (show_debug) log_progress(table.name, gtfsStaticDataImportState.value.progStopTimes)
+            }
+        }
+    }
 }
 
 data class TransitState(
@@ -172,4 +247,13 @@ data class TransitState(
     val nextArrival: VehicleStopTime,
     val eQuerySuccess: Boolean = false,
     val eQueryFailed: Boolean = false
+)
+
+data class GTFSStaticDataImportProgressState(
+    val progRoutes: Int = 0,
+    val progTrips: Int = 0,
+    val progCalendar: Int = 0,
+    val progCalendarDates: Int = 0,
+    val progStops: Int = 0,
+    val progStopTimes: Int = 0
 )

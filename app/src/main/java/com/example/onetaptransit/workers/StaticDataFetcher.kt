@@ -9,6 +9,7 @@ import com.example.onetaptransit.consts.STATIC_ZIP_FILENAME
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.net.UnknownHostException
 
 /**
  * Opens connection to Translink GTFS Static API and downloads static data zip file to cache.
@@ -26,13 +27,15 @@ class StaticDataFetcher(ctx: Context, params: WorkerParameters) : CoroutineWorke
                     APIRequestBuilder.gtfsStaticRequest().openStream().use { inputStream ->
                         dataFilePath.outputStream().use { fileOutputStream ->
                             inputStream.copyTo(fileOutputStream)
+                            fileOutputStream.close()
                         }
+                        inputStream.close()
                     }
                 }
                 Result.success()
-            } catch (throwable: Throwable) {
-                Log.e(StaticDataFetcher::class.simpleName, "Failed to fetch static data.", throwable)
-                Result.failure()
+            } catch (e: UnknownHostException) {
+                Log.e(StaticDataFetcher::class.simpleName, e::class.simpleName + ": ${e.message}")
+                Result.retry()
             }
         }
     }

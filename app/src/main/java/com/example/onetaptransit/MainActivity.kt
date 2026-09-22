@@ -1,6 +1,7 @@
 package com.example.onetaptransit
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -82,6 +83,19 @@ class MainActivity : ComponentActivity() {
                                 {}
                             )
                         }
+
+                        TestButton(
+                            "Cancel Static Data Import",
+                            "",
+                            onButtonClick = {
+                                transitViewModel.cancelStaticDataImport(this@MainActivity)
+                                Log.d("Main Activity", "Cancel button clicked.")
+                            },
+                            false,
+                            false,
+                            false,
+                            {}
+                        )
 
                         TextInputWithTestButton(
                             transitViewModel.transitState.collectAsStateWithLifecycle(),
