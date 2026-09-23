@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequest
 import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.OutOfQuotaPolicy
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.workDataOf
@@ -99,10 +100,14 @@ class TransitViewModel @Inject constructor(
     fun updateStaticData(context: Context, onProcessComplete: () -> Unit) {
         importProgressObserver?.cancel()
         importProgressObserver = viewModelScope.launch {
-            val dataFetcher = OneTimeWorkRequestBuilder<StaticDataFetcher>().build()
+            val dataFetcher = OneTimeWorkRequestBuilder<StaticDataFetcher>()
+                .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+                .build()
+
             val tableImporters = mutableListOf<OneTimeWorkRequest>()
 
             // Create list of import workers
+            // Using setExpedited() seems to persist better in background
             // Importer tag + table name tags used to later identify these workers
             for (table in StaticDataTableName.entries) {
                 val tableImporter = OneTimeWorkRequestBuilder<StaticDataTableImporter>()
@@ -111,6 +116,7 @@ class TransitViewModel @Inject constructor(
                             KEY_STATIC_TABLE_NAME to table.name
                         )
                     )
+                    .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
                     .addTag(STATIC_DATA_TABLE_IMPORTER_TAG)
                     .addTag(table.name)
                     .build()

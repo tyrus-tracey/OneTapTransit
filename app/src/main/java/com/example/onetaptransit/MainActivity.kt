@@ -47,8 +47,16 @@ class MainActivity : ComponentActivity() {
                                 "Static Data",
                                 "Static Data Downloaded",
                                 {
+                                    launchNotification(
+                                        999,
+                                        "Importing GTFS Static Data",
+                                        "doing a bunch of work...",
+                                        "a bunch of descriptor text to show expanded content",
+                                        applicationContext
+                                    )
                                     transitViewModel.updateStaticData(this@MainActivity) {
                                         staticDataUpdated = true
+                                        cancelNotification(999, applicationContext)
                                     }
                                 },
                                 staticDataUpdated,
@@ -88,6 +96,7 @@ class MainActivity : ComponentActivity() {
                             "Cancel Static Data Import",
                             "",
                             onButtonClick = {
+                                cancelNotification(999, applicationContext)
                                 transitViewModel.cancelStaticDataImport(this@MainActivity)
                                 Log.d("Main Activity", "Cancel button clicked.")
                             },
@@ -128,8 +137,6 @@ class MainActivity : ComponentActivity() {
 
 
                         NextArrivalDisplay(transitViewModel.transitState.collectAsStateWithLifecycle())
-
-
                     }
                 }
             }
