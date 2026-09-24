@@ -19,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.onetaptransit.notifications.cancelNotification
 import com.example.onetaptransit.ui.theme.OneTapTransitTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -47,13 +48,6 @@ class MainActivity : ComponentActivity() {
                                 "Static Data",
                                 "Static Data Downloaded",
                                 {
-                                    launchNotification(
-                                        999,
-                                        "Importing GTFS Static Data",
-                                        "doing a bunch of work...",
-                                        "a bunch of descriptor text to show expanded content",
-                                        applicationContext
-                                    )
                                     transitViewModel.updateStaticData(this@MainActivity) {
                                         staticDataUpdated = true
                                         cancelNotification(999, applicationContext)

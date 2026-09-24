@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="12dp">
+
+    <TextView
+        android:id="@+id/title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="From XML: Importing GTFS Static Data..."
+        android:textAppearance="@android:style/TextAppearance.StatusBar.EventContent.Title" />
+
+    <!-- Progress bar 1: ROUTES -->
+    <TextView
+        android:id="@+id/routes_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="routes.txt"
+        android:textAppearance="@android:style/TextAppearance.StatusBar.EventContent" />
+
+    <ProgressBar
+        android:id="@+id/routes_import_progress"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:max="100"
+        android:progress="0" />
+
+    <!-- Progress bar 2: TRIPS -->
+    <TextView
+        android:id="@+id/trips_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="trips.txt"
+        android:textAppearance="@android:style/TextAppearance.StatusBar.EventContent" />
+
+    <ProgressBar
+        android:id="@+id/trips_import_progress"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:max="100"
+        android:progress="0" />
+
+    <!-- Progress bar 3: CALENDAR -->
+    <TextView
+        android:id="@+id/calendar_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="calendar.txt"
+        android:textAppearance="@android:style/TextAppearance.StatusBar.EventContent" />
+
+    <ProgressBar
+        android:id="@+id/calendar_import_progress"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:max="100"
+        android:progress="0" />
+
+    <!-- Progress bar 4: CALENDAR_DATES -->
+    <TextView
+        android:id="@+id/calendar_dates_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="calendar_dates.txt"
+        android:textAppearance="@android:style/TextAppearance.StatusBar.EventContent" />
+
+    <ProgressBar
+        android:id="@+id/calendar_dates_import_progress"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:max="100"
+        android:progress="0" />
+
+    <!-- Progress bar 5: STOPS -->
+    <TextView
+        android:id="@+id/stops_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="stops.txt"
+        android:textAppearance="@android:style/TextAppearance.StatusBar.EventContent" />
+
+    <ProgressBar
+        android:id="@+id/stops_import_progress"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:max="100"
+        android:progress="0" />
+
+    <!-- Progress bar 6: STOP_TIMES -->
+    <TextView
+        android:id="@+id/stop_times_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="stop_times.txt"
+        android:textAppearance="@android:style/TextAppearance.StatusBar.EventContent" />
+
+    <ProgressBar
+        android:id="@+id/stop_times_import_progress"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:max="100"
+        android:progress="0" />
+</LinearLayout>
