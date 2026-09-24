@@ -101,6 +101,7 @@ class TransitViewModel @Inject constructor(
     fun updateStaticData(context: Context, onProcessComplete: () -> Unit) {
         importProgressObserver?.cancel()
         importProgressObserver = viewModelScope.launch {
+            updateIsLoading(true)
             val dataFetcher = OneTimeWorkRequestBuilder<StaticDataFetcher>()
                 .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
                 .build()
@@ -154,6 +155,7 @@ class TransitViewModel @Inject constructor(
                 .collect { workInfos ->
                     // For each importer, listen to progress changes and update ViewModel
                     val tableImporterInfos = workInfos.filter { it.tags.contains(STATIC_DATA_TABLE_IMPORTER_TAG) }
+
                     for (tableImporterInfo in tableImporterInfos) {
                         val tableTag = tableImporterInfo.tags.first { tag ->
                             StaticDataTableName.entries.any { it.name == tag }
@@ -168,6 +170,7 @@ class TransitViewModel @Inject constructor(
                     }
 
                     if (workInfos.all { it.state == WorkInfo.State.SUCCEEDED } ) {
+                        updateIsLoading(false)
                         onProcessComplete()
                         job_notification.cancel()
                     }
@@ -206,6 +209,7 @@ class TransitViewModel @Inject constructor(
     }
 
     fun cancelStaticDataImport(context: Context) {
+        updateIsLoading(false)
         WorkManager.getInstance(context).cancelUniqueWork(STATIC_DATA_IMPORT_UNIQUE_WORK_NAME)
         importProgressObserver?.cancel()
         WorkManager.getInstance(context).pruneWork()
@@ -225,6 +229,10 @@ class TransitViewModel @Inject constructor(
 
     fun setQueryFailedState(newState: Boolean) {
         _transitState.update { it.copy(eQueryFailed = newState) }
+    }
+
+    fun updateIsLoading(newState: Boolean) {
+        _gtfsStaticDataImportState.update { it.copy(isLoading = newState) }
     }
 
     fun updateImportProgress(table: StaticDataTableName, progress: Int, show_debug: Boolean = false) {
@@ -273,6 +281,7 @@ data class TransitState(
 )
 
 data class GTFSStaticDataImportProgressState(
+    val isLoading: Boolean = false,
     val progRoutes: Int = 0,
     val progTrips: Int = 0,
     val progCalendar: Int = 0,

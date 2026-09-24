@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.onetaptransit.notifications.cancelNotification
 import com.example.onetaptransit.ui.theme.OneTapTransitTheme
+import com.example.onetaptransit.workers.ScreenBlocker
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -32,6 +33,10 @@ class MainActivity : ComponentActivity() {
         setContent {
             OneTapTransitTheme {
                 val transitViewModel: TransitViewModel by viewModels()
+
+                if (transitViewModel.gtfsStaticDataImportState.collectAsStateWithLifecycle().value.isLoading) {
+                    ScreenBlocker("Importing GTFS Static Data...")
+                }
 
                 Box(modifier = Modifier
                     .fillMaxSize(),
