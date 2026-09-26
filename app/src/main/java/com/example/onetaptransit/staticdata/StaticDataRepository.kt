@@ -43,9 +43,16 @@ class StaticDataRepository @Inject constructor(
         return staticDataDao.InsertCalendarsBlocking(calendars)
     }
 
+    @JvmName("insertMultipleCalendarsDatesBlocking")
+    fun insertMultipleBlocking(calendarDates: List<CalendarDate>) : List<Long> {
+        return staticDataDao.InsertCalendarDatesBlocking(calendarDates)
+    }
+
     suspend fun truncateAllTables() {
         staticDataDao.truncateRoute()
         staticDataDao.truncateTrip()
+        staticDataDao.truncateCalendar()
+        staticDataDao.truncateCalendarDate()
         staticDataDao.truncateStop()
         staticDataDao.truncateStopTime()
     }

@@ -252,7 +252,8 @@ class TransitViewModel @Inject constructor(
                 if (show_debug) log_progress(table.name, gtfsStaticDataImportState.value.progCalendar)
             }
             StaticDataTableName.CALENDAR_DATES -> {
-                if (show_debug) Log.d("TransitViewModel", "updateImportProgress(): Handling for CALENDAR_DATES to be implemented.")
+                _gtfsStaticDataImportState.update { it.copy(progCalendarDates = progress) }
+                if (show_debug) log_progress(table.name, gtfsStaticDataImportState.value.progCalendarDates)
             }
             StaticDataTableName.STOPS -> {
                 _gtfsStaticDataImportState.update { it.copy(progStops = progress) }

@@ -24,6 +24,9 @@ interface StaticDataDao {
     fun InsertCalendarsBlocking(calendars: List<Calendar>) : List<Long>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun InsertCalendarDatesBlocking(calendarDates: List<CalendarDate>) : List<Long>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun InsertStopsBlocking(stops: List<Stop>) : List<Long>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -40,6 +43,18 @@ interface StaticDataDao {
     """
     )
     suspend fun truncateTrip()
+
+    @Query("""
+        DELETE from Calendar
+    """
+    )
+    suspend fun truncateCalendar()
+
+    @Query("""
+        DELETE from CalendarDate
+    """
+    )
+    suspend fun truncateCalendarDate()
 
     @Query("""
         DELETE from Stop

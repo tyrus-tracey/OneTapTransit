@@ -1,6 +1,7 @@
 package com.example.onetaptransitprivate
 
 import com.example.onetaptransit.staticdata.Calendar
+import com.example.onetaptransit.staticdata.CalendarDate
 import com.example.onetaptransit.staticdata.Route
 import com.example.onetaptransit.staticdata.Stop
 import com.example.onetaptransit.staticdata.StopTime
@@ -39,6 +40,14 @@ fun dataRowToCalendar(dataRow: LinkedHashMap<String, String>) : Calendar {
         ServiceWeekday(dataRow["sunday"] ?: "TERRIBLE ERROR"),
         LocalDate.parse(dataRow["start_date"] ?: "TERRIBLE ERROR", DateTimeFormatter.BASIC_ISO_DATE),
         LocalDate.parse(dataRow["end_date"] ?: "TERRIBLE ERROR", DateTimeFormatter.BASIC_ISO_DATE)
+    )
+}
+
+fun dataRowToCalendarDate(dataRow: LinkedHashMap<String, String>) : CalendarDate {
+    return CalendarDate(
+        dataRow["service_id"] ?: "--",
+        LocalDate.parse(dataRow["date"] ?: "TERRIBLE ERROR", DateTimeFormatter.BASIC_ISO_DATE),
+        CalendarExceptionType.fromString(dataRow["exception_type"] ?: "TERRIBLE ERROR")
     )
 }
 
@@ -107,6 +116,19 @@ class ServiceWeekday(operation: Int) {
     }
 }
 
-enum class StaticTable {
-    ROUTES, TRIPS, CALENDAR, CALENDAR_DATES, STOPS, STOP_TIMES
+enum class CalendarExceptionType {
+    SERVICE_ADDED,
+    SERVICE_REMOVED;
+
+    companion object {
+        fun fromString(s: String): CalendarExceptionType {
+            return when (s) {
+                "1" -> SERVICE_ADDED
+                "2"-> SERVICE_REMOVED
+                else -> {
+                    throw IllegalArgumentException("Illegal value for CalendarExceptionType.fromInt(): $s")
+                }
+            }
+        }
+    }
 }

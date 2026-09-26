@@ -9,14 +9,15 @@ import androidx.room3.Entity
 import androidx.room3.PrimaryKey
 import androidx.room3.Relation
 import androidx.room3.RoomDatabase
+import com.example.onetaptransitprivate.CalendarExceptionType
 import com.example.onetaptransitprivate.ServiceTime
 import com.example.onetaptransitprivate.ServiceWeekday
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
 @Database(
-    entities = [Route::class, Trip::class, Calendar::class, Stop::class, StopTime::class],
-    version = 7,
+    entities = [Route::class, Trip::class, Calendar::class, CalendarDate::class, Stop::class, StopTime::class],
+    version = 8,
     exportSchema = false
 )
 @ColumnTypeConverters(Converters::class)
@@ -53,6 +54,13 @@ data class Calendar(
     val sunday: ServiceWeekday,
     @ColumnInfo("start_date") val startDate: LocalDate,
     @ColumnInfo("end_date") val endDate: LocalDate
+)
+
+@Entity(primaryKeys = ["service_id", "date"])
+data class CalendarDate(
+    @ColumnInfo("service_id") val serviceID: String,
+    @ColumnInfo("date") val date: LocalDate,
+    @ColumnInfo("exception_type") val exceptionType: CalendarExceptionType
 )
 
 @Entity(primaryKeys = ["trip_id", "stop_sequence"])
@@ -137,6 +145,29 @@ object Converters {
                 return 1
             } else {
                 return 0
+            }
+        }
+    }
+
+    @ColumnTypeConverter
+    fun intToCalendarExceptionType(value: Int?) : CalendarExceptionType? {
+        return value?.let {
+            if (value == 1) {
+                return CalendarExceptionType.SERVICE_ADDED
+            } else if (value == 2) {
+                return CalendarExceptionType.SERVICE_REMOVED
+            } else {
+                throw IllegalArgumentException("Illegal value for intToCalendarExceptionType converter: $value")
+            }
+        }
+    }
+
+    @ColumnTypeConverter
+    fun CalendarExceptionTypeToInt(calendarExceptionType: CalendarExceptionType?) : Int? {
+        return calendarExceptionType?.let {
+            when (calendarExceptionType) {
+                CalendarExceptionType.SERVICE_ADDED -> 1
+                CalendarExceptionType.SERVICE_REMOVED -> 2
             }
         }
     }

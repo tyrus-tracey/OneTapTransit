@@ -10,12 +10,14 @@ import com.example.onetaptransit.consts.KEY_STATIC_TABLE_NAME
 import com.example.onetaptransit.consts.STATIC_ZIP_FILENAME
 import com.example.onetaptransit.consts.WORKER_PROGRESS
 import com.example.onetaptransit.staticdata.Calendar
+import com.example.onetaptransit.staticdata.CalendarDate
 import com.example.onetaptransit.staticdata.Route
 import com.example.onetaptransit.staticdata.StaticDataRepository
 import com.example.onetaptransit.staticdata.Stop
 import com.example.onetaptransit.staticdata.StopTime
 import com.example.onetaptransit.staticdata.Trip
 import com.example.onetaptransitprivate.dataRowToCalendar
+import com.example.onetaptransitprivate.dataRowToCalendarDate
 import com.example.onetaptransitprivate.dataRowToRoute
 import com.example.onetaptransitprivate.dataRowToStop
 import com.example.onetaptransitprivate.dataRowToStopTime
@@ -105,7 +107,17 @@ class StaticDataTableImporter @AssistedInject constructor(
                         )
                     }
                     StaticDataTableName.CALENDAR_DATES -> {
-                        Log.d(id.toString(),"Calendar date importer: To be implemented")
+                        repo.importDataToDB<CalendarDate>(
+                            dataArchive = zip,
+                            dataFilename = "calendar_dates.txt",
+                            dataRowToEntity = { calendarDateRow -> dataRowToCalendarDate(calendarDateRow) },
+                            { calendarDates -> repo.insertMultipleBlocking(calendarDates) },
+                            { bytesRead, totalBytes ->
+                                updateImportProgress(bytesRead, totalBytes)
+                            },
+                            { isStopped },
+                            show_import_debug_output
+                        )
                     }
                     StaticDataTableName.STOPS -> {
                         repo.importDataToDB<Stop>(
