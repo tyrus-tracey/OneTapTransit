@@ -17,7 +17,8 @@ import com.example.onetaptransit.consts.REALTIME_PB_FILENAME
 import com.example.onetaptransit.consts.STATIC_DATA_IMPORT_UNIQUE_WORK_NAME
 import com.example.onetaptransit.consts.STATIC_DATA_TABLE_IMPORTER_TAG
 import com.example.onetaptransit.consts.WORKER_PROGRESS
-import com.example.onetaptransit.notifications.launchGTFSStaticImportNotification
+import com.example.onetaptransit.notifications.cancelNotification
+import com.example.onetaptransit.notifications.launchNotification
 import com.example.onetaptransit.staticdata.StaticDataRepository
 import com.example.onetaptransit.staticdata.VehicleStopTime
 import com.example.onetaptransit.workers.RealtimeFeedFetcher
@@ -134,20 +135,13 @@ class TransitViewModel @Inject constructor(
                 .then(tableImporters)
                 .enqueue()
 
-            val job_notification = launch {
-                gtfsStaticDataImportState.collect { state ->
-                    launchGTFSStaticImportNotification(
-                        999,
-                        state.progRoutes,
-                        state.progTrips,
-                        state.progCalendar,
-                        state.progCalendarDates,
-                        state.progStops,
-                        state.progStopTimes,
-                        context
-                    )
-                }
-            }
+            launchNotification(
+                999,
+                "Importing GTFS Static Data",
+                "Tap to view more.",
+                "",
+                context
+            )
 
             // Create listeners for work progress and completion state changes.
             WorkManager.getInstance(context).getWorkInfosForUniqueWorkLiveData(STATIC_DATA_IMPORT_UNIQUE_WORK_NAME)
@@ -172,7 +166,7 @@ class TransitViewModel @Inject constructor(
                     if (workInfos.all { it.state == WorkInfo.State.SUCCEEDED } ) {
                         updateIsLoading(false)
                         onProcessComplete()
-                        job_notification.cancel()
+                        cancelNotification(999, context)
                     }
                 }
         }

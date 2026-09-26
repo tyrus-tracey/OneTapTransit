@@ -1,7 +1,6 @@
 package com.example.onetaptransit
 
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -19,9 +18,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.onetaptransit.composables.GTFSStaticDataImportDisplay
+import com.example.onetaptransit.composables.NextArrivalDisplay
+import com.example.onetaptransit.composables.TestButton
+import com.example.onetaptransit.composables.TextInputWithTestButton
 import com.example.onetaptransit.notifications.cancelNotification
 import com.example.onetaptransit.ui.theme.OneTapTransitTheme
-import com.example.onetaptransit.workers.ScreenBlocker
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -33,9 +35,13 @@ class MainActivity : ComponentActivity() {
         setContent {
             OneTapTransitTheme {
                 val transitViewModel: TransitViewModel by viewModels()
+                val gtfsStaticDataImportState by transitViewModel.gtfsStaticDataImportState.collectAsStateWithLifecycle()
 
-                if (transitViewModel.gtfsStaticDataImportState.collectAsStateWithLifecycle().value.isLoading) {
-                    ScreenBlocker("Importing GTFS Static Data...")
+                if (gtfsStaticDataImportState.isLoading) {
+                    GTFSStaticDataImportDisplay(
+                        gtfsStaticDataImportState,
+                        { transitViewModel.cancelStaticDataImport(applicationContext) }
+                    )
                 }
 
                 Box(modifier = Modifier
@@ -91,22 +97,8 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
-                        TestButton(
-                            "Cancel Static Data Import",
-                            "",
-                            onButtonClick = {
-                                cancelNotification(999, applicationContext)
-                                transitViewModel.cancelStaticDataImport(this@MainActivity)
-                                Log.d("Main Activity", "Cancel button clicked.")
-                            },
-                            false,
-                            false,
-                            false,
-                            {}
-                        )
-
                         TextInputWithTestButton(
-                            transitViewModel.transitState.collectAsStateWithLifecycle(),
+                            transitViewModel.transitState.collectAsStateWithLifecycle(), //TODO: save transitState as -> val state by ...
                             "Next Scheduled Arrival",
                             "Queried",
                             transitViewModel::updateUserEntryStopCode,
@@ -118,7 +110,7 @@ class MainActivity : ComponentActivity() {
                                             transitViewModel.updateNextArrival(nextArrival)
                                         }
                                         res.onFailure { e ->
-                                            when(e) {
+                                            when (e) {
                                                 is NumberFormatException -> ""
                                                 is NoSuchElementException -> ""
                                             }
@@ -132,8 +124,6 @@ class MainActivity : ComponentActivity() {
                             },
                             false
                         )
-
-
 
                         NextArrivalDisplay(transitViewModel.transitState.collectAsStateWithLifecycle())
                     }

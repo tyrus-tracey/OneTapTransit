@@ -1,4 +1,4 @@
-package com.example.onetaptransit
+package com.example.onetaptransit.composables
 
 import androidx.compose.animation.Animatable
 import androidx.compose.foundation.layout.Column

@@ -1,4 +1,4 @@
-package com.example.onetaptransit
+package com.example.onetaptransit.composables
 
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.text.KeyboardOptions
@@ -6,6 +6,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.ui.text.input.KeyboardType
+import com.example.onetaptransit.TransitState
 
 @Composable
 fun TextInputWithTestButton(
