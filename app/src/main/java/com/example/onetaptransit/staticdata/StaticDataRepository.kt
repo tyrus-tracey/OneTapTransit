@@ -58,7 +58,6 @@ class StaticDataRepository @Inject constructor(
     }
 
     /** For a given stop, return all of today's future scheduled stop times. */
-    // TODO: Query currently does not check against CalendarDates.
     suspend fun getNextScheduledArrival(stopCode: Int) : List<VehicleStopTime> {
         val now = LocalDate.now()
         val date = now.format(DateTimeFormatter.BASIC_ISO_DATE).toString()
@@ -68,7 +67,7 @@ class StaticDataRepository @Inject constructor(
             )
 
         Log.d("INPUT", listOf<String>(stopCode.toString(), date, weekday.toString(), time.toString()).toString())
-        return staticDataDao.testGetNextScheduledArrivalForStop(stopCode, date, weekday.toString(), time.time)
+        return staticDataDao.getNextScheduledArrivalForStop(stopCode, date, weekday.toString(), time.time)
     }
 
     /**
