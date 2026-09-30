@@ -83,7 +83,14 @@ class ServiceTime(
     fun second(): Int { return (time % 60).toInt() }
 
     override fun toString(): String {
-        return listOf(hour(), minute(), second()).joinToString(":")
+
+        return listOf(hour(), minute(), second()).joinToString(":") {
+            if (it < 10) {
+                "0" + it.toString()
+            } else {
+                it.toString()
+            }
+        }
     }
 }
 

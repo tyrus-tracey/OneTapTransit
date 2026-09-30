@@ -1,12 +1,13 @@
 package com.example.onetaptransit.composables
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -41,35 +42,53 @@ fun NextArrivalsForStopDisplay(
 fun NextArrivalDisplay(
     nextArrival: VehicleStopTime
 ) {
-    Box() {
-        Column() {
-            Row(modifier = Modifier
+    Box(modifier = Modifier.background(Color.Black).padding(bottom = 1.dp)) {
+        Row(
+            modifier = Modifier
                 .fillMaxWidth()
+                .height(64.dp)
                 .background(Color(android.graphics.Color.BLUE)),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                val headsignNumber = nextArrival.tripHeadsign.substringBefore(' ')
-                val headsignName = nextArrival.tripHeadsign.substringAfter(' ')
-                val textColor = Color(android.graphics.Color.rgb(250, 200, 40))
-                Text(headsignNumber, fontSize = 32.sp, modifier = Modifier.padding(8.dp), color = textColor)
-                Text(headsignName, fontSize = 16.sp, color = textColor)
-            }
-            Box(modifier = Modifier
-                .fillMaxWidth()
-                .background(Color(android.graphics.Color.YELLOW)),
-            ) {
-                val arrivalTimeText =
-                    if (nextArrival.arrivalTime.time == 0L) {
-                        "--:--:--"
-                    } else {
-                        nextArrival.arrivalTime.toString()
-                    }
-                Text(
-                    arrivalTimeText,
-                    fontSize = 24.sp, textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth())
-            }
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            val headsignNumber = nextArrival.tripHeadsign.substringBefore(' ')
+            val headsignName = nextArrival.tripHeadsign.substringAfter(' ')
+            val textColor = Color(android.graphics.Color.rgb(250, 200, 40))
+
+            Text(
+                headsignNumber,
+                color = textColor,
+                modifier = Modifier
+                    .fillMaxWidth(0.175f)
+                    .padding(4.dp),
+                autoSize = TextAutoSize.StepBased(24.sp, 32.sp),
+                textAlign = TextAlign.End,
+            )
+            Text(
+                headsignName,
+                color = textColor,
+                modifier = Modifier
+                    .fillMaxWidth(0.60f)
+                    .padding(start = 12.dp, end = 8.dp),
+                textAlign = TextAlign.Start,
+                fontSize = 28.sp
+            )
+
+            val arrivalTimeText =
+                if (nextArrival.arrivalTime.time == 0L) {
+                    "--:--:--"
+                } else {
+                    nextArrival.arrivalTime.toString()
+                }
+            val arrivalTimeTextColor = Color.Yellow
+            Text(
+                arrivalTimeText,
+                color = arrivalTimeTextColor,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(end = 8.dp),
+                autoSize = TextAutoSize.StepBased(10.sp, 32.sp),
+                textAlign = TextAlign.End,
+            )
         }
     }
 }
