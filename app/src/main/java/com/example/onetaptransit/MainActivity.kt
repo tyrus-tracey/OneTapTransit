@@ -19,7 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.onetaptransit.composables.GTFSStaticDataImportDisplay
-import com.example.onetaptransit.composables.NextArrivalDisplay
+import com.example.onetaptransit.composables.NextArrivalsForStopDisplay
 import com.example.onetaptransit.composables.TestButton
 import com.example.onetaptransit.composables.TextInputWithTestButton
 import com.example.onetaptransit.notifications.cancelNotification
@@ -104,18 +104,7 @@ class MainActivity : ComponentActivity() {
                             transitViewModel::updateUserEntryStopCode,
                             {
                                 transitViewModel.queryNextArrival(
-                                    { res ->
-                                        res.onSuccess {
-                                            val nextArrival = res.getOrThrow()
-                                            transitViewModel.updateNextArrival(nextArrival)
-                                        }
-                                        res.onFailure { e ->
-                                            when (e) {
-                                                is NumberFormatException -> ""
-                                                is NoSuchElementException -> ""
-                                            }
-                                        }
-                                    }
+                                    {}
                                 )
                             },
                             {
@@ -125,7 +114,10 @@ class MainActivity : ComponentActivity() {
                             false
                         )
 
-                        NextArrivalDisplay(transitViewModel.transitState.collectAsStateWithLifecycle())
+
+                        NextArrivalsForStopDisplay(
+                            transitViewModel.nextArrivalsState
+                        )
                     }
                 }
             }

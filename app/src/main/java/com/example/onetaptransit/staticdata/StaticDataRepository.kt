@@ -57,8 +57,8 @@ class StaticDataRepository @Inject constructor(
         staticDataDao.truncateStopTime()
     }
 
-    /** For a given stop, return all of today's future scheduled stop times. */
-    suspend fun getNextScheduledArrival(stopCode: Int) : List<VehicleStopTime> {
+    /** For a given stop, return the next scheduled arrivals for all routes (grouped by trip headsign)*/
+    suspend fun getNextScheduledArrival(stopCode: Int, show_debug: Boolean) : List<VehicleStopTime> {
         val now = LocalDate.now()
         val date = now.format(DateTimeFormatter.BASIC_ISO_DATE).toString()
         val weekday = now.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.CANADA)
@@ -66,7 +66,7 @@ class StaticDataRepository @Inject constructor(
                 LocalTime.now().truncatedTo(ChronoUnit.SECONDS).format(DateTimeFormatter.ISO_LOCAL_TIME)
             )
 
-        Log.d("INPUT", listOf<String>(stopCode.toString(), date, weekday.toString(), time.toString()).toString())
+        if (show_debug) Log.d("INPUT", listOf<String>(stopCode.toString(), date, weekday.toString(), time.toString()).toString())
         return staticDataDao.getNextScheduledArrivalForStop(stopCode, date, weekday.toString(), time.time)
     }
 

@@ -82,7 +82,7 @@ interface StaticDataDao {
         
         SELECT Route.route_short_name, 
                 Trip.trip_id, Trip.trip_headsign, 
-                StopTime.arrival_time, StopTime.departure_time,
+                min(StopTime.arrival_time) as arrival_time, StopTime.departure_time,
                 StopTime.stop_sequence
         FROM Stop
         JOIN StopTime 
@@ -120,8 +120,8 @@ interface StaticDataDao {
         ) AND
             Stop.stop_code = :stopCode AND
             StopTime.arrival_time >= :time
+        GROUP BY trip.trip_headsign
         ORDER BY StopTime.arrival_time ASC
-        LIMIT 1
     """)
     suspend fun getNextScheduledArrivalForStop(
         stopCode: Int, date: String, weekday: String, time: Long

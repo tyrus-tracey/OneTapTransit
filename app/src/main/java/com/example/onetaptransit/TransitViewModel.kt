@@ -2,6 +2,7 @@ package com.example.onetaptransit
 
 import android.content.Context
 import android.util.Log
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.asFlow
 import androidx.lifecycle.viewModelScope
@@ -25,7 +26,6 @@ import com.example.onetaptransit.workers.RealtimeFeedFetcher
 import com.example.onetaptransit.workers.StaticDataFetcher
 import com.example.onetaptransit.workers.StaticDataTableImporter
 import com.example.onetaptransit.workers.StaticDataTableName
-import com.example.onetaptransitprivate.ServiceTime
 import com.google.transit.realtime.GtfsRealtime.FeedMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -41,17 +41,12 @@ import javax.inject.Inject
 class TransitViewModel @Inject constructor(
     private val repo: StaticDataRepository
 ) : ViewModel() {
-    private val _transitState = MutableStateFlow(
-        //TODO: TransitState requires an initial value for nextArrival, review if
-        //  this default value makes sense or whether it should be nullable instead.
-        TransitState(nextArrival = VehicleStopTime(
-            "","", ServiceTime(0), ServiceTime(0), "", 0
-            )
-        )
-    )
+    private val _transitState = MutableStateFlow(TransitState())
     private val _gtfsStaticDataImportState = MutableStateFlow(GTFSStaticDataImportProgressState())
+    private val _nextArrivalsState = mutableStateMapOf<Int, List<VehicleStopTime>>()
     val transitState = _transitState.asStateFlow()
     val gtfsStaticDataImportState = _gtfsStaticDataImportState.asStateFlow()
+    val nextArrivalsState : Map<Int, List<VehicleStopTime>> get() = _nextArrivalsState
 
     /**
      * Fetch feed from Translink API.
@@ -173,23 +168,22 @@ class TransitViewModel @Inject constructor(
     }
 
     /**
-     * Read user's inputted StopCode from ViewModel and query for the next scheduled bus arrival.
-     * Currently returns only the soonest vehicle out of the list of future stop times.
+     * Read user's inputted StopCode from ViewModel and query for the next scheduled arrivals.
      */
     fun queryNextArrival(
-        onQueryResponse : (Result<VehicleStopTime>) -> Unit
+        onQueryResponse : () -> Unit
     ) {
         viewModelScope.launch {
-            val response = runCatching {
-                val stopCode: Int = transitState.value.userEntryStopCode.toInt()
-                val nextArrival = repo.getNextScheduledArrival(stopCode)
-                nextArrival.first() // soonest vehicle
+            val stopCode: Int = transitState.value.userEntryStopCode.toInt()
+            runCatching {
+                repo.getNextScheduledArrival(stopCode, false)
             } .onSuccess {
+                updateNextArrivals(stopCode, it)
                 setQuerySuccessState(true)
             } .onFailure {
                 setQueryFailedState(true)
             }
-            onQueryResponse(response)
+            onQueryResponse()
         }
     }
 
@@ -213,8 +207,8 @@ class TransitViewModel @Inject constructor(
         _transitState.update { it.copy(userEntryStopCode = newStopCode) }
     }
 
-    fun updateNextArrival(newArrival: VehicleStopTime) {
-        _transitState.update { it.copy(nextArrival = newArrival) }
+    fun updateNextArrivals(stopCode: Int, nextArrivalsForStop: List<VehicleStopTime>) {
+        _nextArrivalsState[stopCode] = nextArrivalsForStop
     }
 
     fun setQuerySuccessState(newState: Boolean) {
@@ -270,7 +264,6 @@ class TransitViewModel @Inject constructor(
 data class TransitState(
     val realtimeFeed: FeedMessage = FeedMessage.getDefaultInstance(),
     val userEntryStopCode: String = "",
-    val nextArrival: VehicleStopTime,
     val eQuerySuccess: Boolean = false,
     val eQueryFailed: Boolean = false
 )
