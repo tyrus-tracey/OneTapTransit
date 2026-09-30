@@ -46,7 +46,7 @@ fun NextArrivalDisplay(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(64.dp)
+                .height(100.dp)
                 .background(Color(android.graphics.Color.BLUE)),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -60,6 +60,7 @@ fun NextArrivalDisplay(
                 modifier = Modifier
                     .fillMaxWidth(0.175f)
                     .padding(4.dp),
+                maxLines = 1,
                 autoSize = TextAutoSize.StepBased(24.sp, 32.sp),
                 textAlign = TextAlign.End,
             )
@@ -70,7 +71,7 @@ fun NextArrivalDisplay(
                     .fillMaxWidth(0.60f)
                     .padding(start = 12.dp, end = 8.dp),
                 textAlign = TextAlign.Start,
-                fontSize = 28.sp
+                fontSize = 24.sp
             )
 
             val arrivalTimeText =
@@ -86,7 +87,8 @@ fun NextArrivalDisplay(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(end = 8.dp),
-                autoSize = TextAutoSize.StepBased(10.sp, 32.sp),
+                maxLines = 1,
+                autoSize = TextAutoSize.StepBased(8.sp, 32.sp),
                 textAlign = TextAlign.End,
             )
         }
