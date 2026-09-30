@@ -1,10 +1,16 @@
 package com.example.onetaptransit.composables
 
+import android.view.KeyEvent.ACTION_DOWN
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.KeyboardType
 import com.example.onetaptransit.TransitState
 
@@ -18,12 +24,23 @@ fun TextInputWithTestButton(
     onQueryEventConsumed: () -> Unit,
     isTaskDone: Boolean
 ) {
+    val focusManager = LocalFocusManager.current
     Row() {
         TextField(
             value = transitState.value.userEntryStopCode,
             onValueChange = { onTextValueChange(it) },
             maxLines = 1,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            modifier = Modifier
+                .onPreviewKeyEvent {
+                    if (it.key == Key.Enter && it.nativeKeyEvent.action == ACTION_DOWN) {
+                        focusManager.clearFocus()
+                        onButtonClick()
+                        true
+                    } else {
+                        false
+                    }
+                }
         )
         TestButton(
             buttonDisplayText,

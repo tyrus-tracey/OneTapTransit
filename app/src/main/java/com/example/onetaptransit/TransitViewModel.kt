@@ -207,7 +207,9 @@ class TransitViewModel @Inject constructor(
         _transitState.update { it.copy(userEntryStopCode = newStopCode) }
     }
 
+    //TODO: validate stopCode first by querying Stops, before updating HashMap
     fun updateNextArrivals(stopCode: Int, nextArrivalsForStop: List<VehicleStopTime>) {
+        _nextArrivalsState.clear() //TODO: tempfix for updating NextArrivalsForStopDisplay when querying a different stop from last
         _nextArrivalsState[stopCode] = nextArrivalsForStop
     }
 
