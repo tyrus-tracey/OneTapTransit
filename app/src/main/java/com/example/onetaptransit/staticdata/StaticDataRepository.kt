@@ -1,6 +1,8 @@
 package com.example.onetaptransit.staticdata
 
 import android.util.Log
+import com.example.onetaptransit.consts.HOURS_PER_DAY
+import com.example.onetaptransit.consts.SECONDS_PER_DAY
 import com.example.onetaptransitprivate.ServiceTime
 import com.jsoizo.kotlincsv.csvReader
 import com.jsoizo.kotlincsv.reader.read
@@ -13,7 +15,6 @@ import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
-import java.time.temporal.ChronoUnit
 import java.util.Locale
 import javax.inject.Inject
 
@@ -59,15 +60,51 @@ class StaticDataRepository @Inject constructor(
 
     /** For a given stop, return the next scheduled arrivals for all routes (grouped by trip headsign)*/
     suspend fun getNextScheduledArrival(stopCode: Int, show_debug: Boolean) : List<VehicleStopTime> {
-        val now = LocalDate.now()
-        val date = now.format(DateTimeFormatter.BASIC_ISO_DATE).toString()
-        val weekday = now.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.CANADA)
-        val time = ServiceTime(
-                LocalTime.now().truncatedTo(ChronoUnit.SECONDS).format(DateTimeFormatter.ISO_LOCAL_TIME)
-            )
+        // Assuming schedule times don't exceed 48:00:00, if so extend (could query for max timestamp in order to make sure)
+        // represents how many days to look back for querying next arrival
+        // for example, if querying at 1:15AM, we should query:
+        //  - today     @ 01:15:00 (4500)
+        //  - yesterday @ 25:15:00 (90900)
 
-        if (show_debug) Log.d("INPUT", listOf<String>(stopCode.toString(), date, weekday.toString(), time.toString()).toString())
-        return staticDataDao.getNextScheduledArrivalForStop(stopCode, date, weekday.toString(), time.time)
+        /* e.g. from today:
+            {"20", "Victoria/To41st",   4500,   4500, 1098402, 21},
+            {"20", "Victoria/ToMarine", 4500,   4500, 1103399, 21},
+            {"N20", "Victoria",         7200,   7200, 1929838, 21}
+          then from yesterday:
+            {"20", "Victoria/ToMarine", 90900,  90900, 1103399, 21},
+            {"N20", "Victoria",         93600,  93600, 1929838, 21}
+
+         We should pick:
+            {"20", "Victoria/To41st",   4500,   4500, 1098402, 21},
+            {"20", "Victoria/ToMarine", 90900,  90900, 1103399, 21},
+            {"N20", "Victoria",         93600,  93600, 1929838, 21}
+         */
+        val lookbackDaysOffset = 1
+
+        val candidates = mutableListOf<VehicleStopTime>()
+        for (dayOffset in 0..lookbackDaysOffset) {
+            val now = LocalDate.now().minusDays(dayOffset.toLong())
+            val date = now.format(DateTimeFormatter.BASIC_ISO_DATE).toString()
+            val weekday = now.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.CANADA)
+
+            val h = LocalTime.now().hour + (dayOffset * HOURS_PER_DAY)
+            val m = LocalTime.now().minute
+            val s = LocalTime.now().second
+            val time = ServiceTime(h, m , s)
+
+            if (show_debug) Log.d("INPUT", listOf<String>(stopCode.toString(), date, weekday.toString(), time.toString()).toString())
+            candidates += staticDataDao.getNextScheduledArrivalForStop(stopCode, date, weekday.toString(), time.time)
+        }
+
+        val nextArrivals = mutableListOf<VehicleStopTime>()
+        val byTripHeadsigns = candidates.groupBy { it.tripHeadsign }
+
+        for (headsign in byTripHeadsigns.keys)  {
+            val trips = byTripHeadsigns[headsign] ?: emptyList()
+            nextArrivals += trips.minBy { it.arrivalTime.time % SECONDS_PER_DAY }
+        }
+
+        return nextArrivals
     }
 
     /**

@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.TextAutoSize
+import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -16,23 +17,40 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.onetaptransit.TransitStop
 import com.example.onetaptransit.staticdata.VehicleStopTime
 
 @Composable
 fun NextArrivalsForStopDisplay(
-    nextArrivalsState: Map<Int, List<VehicleStopTime>>
+    savedTransitStopsState: List<TransitStop>,
+    nextArrivalsState: Map<Int, List<VehicleStopTime>>,
+    onStopBannerClick: (Int) -> Unit
 ) {
     Column() {
-        for (stopCode in nextArrivalsState.keys) {
-            Box(modifier = Modifier
-                .fillMaxWidth()
-                .background(Color.LightGray)) {
-                Text(stopCode.toString(), fontSize = 32.sp, textAlign = TextAlign.Center)
-            }
+        for (transitStop in savedTransitStopsState) {
+            Button(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.LightGray),
+                onClick = {
+                    onStopBannerClick(transitStop.stopCode)
+                },
+                content = {
+                    Text(
+                        transitStop.stopCode.toString() + ": " + transitStop.externalStopName,
+                        fontSize = 32.sp,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            )
 
-            val nextArrivals = nextArrivalsState.getValue(stopCode)
-            for (nextArrival in nextArrivals) {
-                NextArrivalDisplay(nextArrival)
+            if (nextArrivalsState.containsKey(transitStop.stopCode)) {
+                val nextArrivals = nextArrivalsState.getValue(transitStop.stopCode)
+                for (nextArrival in nextArrivals) {
+                    if (!transitStop.ignoreList.contains(nextArrival.tripHeadsign)) {
+                        NextArrivalDisplay(nextArrival)
+                    }
+                }
             }
         }
     }
@@ -42,7 +60,9 @@ fun NextArrivalsForStopDisplay(
 fun NextArrivalDisplay(
     nextArrival: VehicleStopTime
 ) {
-    Box(modifier = Modifier.background(Color.Black).padding(bottom = 1.dp)) {
+    Box(modifier = Modifier
+        .background(Color.Black)
+        .padding(bottom = 1.dp)) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()

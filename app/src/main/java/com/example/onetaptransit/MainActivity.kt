@@ -99,24 +99,26 @@ class MainActivity : ComponentActivity() {
 
                         TextInputWithTestButton(
                             transitViewModel.transitState.collectAsStateWithLifecycle(), //TODO: save transitState as -> val state by ...
-                            "Next Scheduled Arrival",
-                            "Queried",
+                            "Add Stop",
+                            "Add Stop",
                             transitViewModel::updateUserEntryStopCode,
                             {
-                                transitViewModel.queryNextArrival(
-                                    {}
-                                )
+                                transitViewModel.saveTransitStop()
                             },
-                            {
-                                transitViewModel.setQuerySuccessState(false)
-                                transitViewModel.setQueryFailedState(false)
-                            },
+                            {},
                             false
                         )
 
 
                         NextArrivalsForStopDisplay(
-                            transitViewModel.nextArrivalsState
+                            transitViewModel.savedTransitStopsState,
+                            transitViewModel.nextArrivalsState,
+                            onStopBannerClick = { stopCode ->
+                                transitViewModel.queryNextArrival(
+                                    stopCode,
+                                    onQueryResponse = {}
+                                )
+                            }
                         )
                     }
                 }

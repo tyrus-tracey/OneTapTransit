@@ -2,6 +2,7 @@ package com.example.onetaptransit.composables
 
 import android.view.KeyEvent.ACTION_DOWN
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
@@ -29,8 +30,14 @@ fun TextInputWithTestButton(
         TextField(
             value = transitState.value.userEntryStopCode,
             onValueChange = { onTextValueChange(it) },
-            maxLines = 1,
+            singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            keyboardActions = KeyboardActions(
+                onDone = {
+                    focusManager.clearFocus()
+                    onButtonClick()
+                }
+            ),
             modifier = Modifier
                 .onPreviewKeyEvent {
                     if (it.key == Key.Enter && it.nativeKeyEvent.action == ACTION_DOWN) {
@@ -47,9 +54,9 @@ fun TextInputWithTestButton(
             buttonPostTaskText,
             { onButtonClick() },
             isTaskDone,
-            transitState.value.eQuerySuccess,
-            transitState.value.eQueryFailed,
-            onQueryEventConsumed
+            false,
+            false,
+            {}
         )
     }
 }

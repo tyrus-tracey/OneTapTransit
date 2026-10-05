@@ -2,6 +2,7 @@ package com.example.onetaptransit
 
 import android.content.Context
 import android.util.Log
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.asFlow
@@ -44,9 +45,11 @@ class TransitViewModel @Inject constructor(
     private val _transitState = MutableStateFlow(TransitState())
     private val _gtfsStaticDataImportState = MutableStateFlow(GTFSStaticDataImportProgressState())
     private val _nextArrivalsState = mutableStateMapOf<Int, List<VehicleStopTime>>()
+    private val _savedTransitStopsState = mutableStateListOf<TransitStop>()
     val transitState = _transitState.asStateFlow()
     val gtfsStaticDataImportState = _gtfsStaticDataImportState.asStateFlow()
     val nextArrivalsState : Map<Int, List<VehicleStopTime>> get() = _nextArrivalsState
+    val savedTransitStopsState : List<TransitStop> get() = _savedTransitStopsState
 
     /**
      * Fetch feed from Translink API.
@@ -171,16 +174,16 @@ class TransitViewModel @Inject constructor(
      * Read user's inputted StopCode from ViewModel and query for the next scheduled arrivals.
      */
     fun queryNextArrival(
-        onQueryResponse : () -> Unit
+        stopCode: Int,
+        onQueryResponse: () -> Unit
     ) {
         viewModelScope.launch {
-            val stopCode: Int = transitState.value.userEntryStopCode.toInt()
             runCatching {
-                repo.getNextScheduledArrival(stopCode, false)
-            } .onSuccess {
+                repo.getNextScheduledArrival(stopCode, true)
+            }.onSuccess {
                 updateNextArrivals(stopCode, it)
                 setQuerySuccessState(true)
-            } .onFailure {
+            }.onFailure {
                 setQueryFailedState(true)
             }
             onQueryResponse()
@@ -207,6 +210,18 @@ class TransitViewModel @Inject constructor(
         _transitState.update { it.copy(userEntryStopCode = newStopCode) }
     }
 
+    fun saveTransitStop() {
+        val stopCode = transitState.value.userEntryStopCode.toInt()
+        val transitStop = TransitStop(stopCode, "internal", "external")
+        if (!_savedTransitStopsState.contains(transitStop)) {
+            _savedTransitStopsState.add(transitStop)
+        }
+    }
+
+    fun removeTransitStop(transitStop: TransitStop) {
+        _savedTransitStopsState.remove(transitStop)
+    }
+
     //TODO: validate stopCode first by querying Stops, before updating HashMap
     fun updateNextArrivals(stopCode: Int, nextArrivalsForStop: List<VehicleStopTime>) {
         _nextArrivalsState.clear() //TODO: tempfix for updating NextArrivalsForStopDisplay when querying a different stop from last
@@ -231,7 +246,7 @@ class TransitViewModel @Inject constructor(
         }
 
         fun log_progress(tableName: String, progress: Int) {
-            Log.d(tableName, "Imported: " + progress + "%")
+            Log.d(tableName, "Imported: $progress%")
         }
 
         when (table) {
