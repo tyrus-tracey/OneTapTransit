@@ -1,6 +1,7 @@
 package com.example.onetaptransit.composables
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -9,21 +10,24 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.Button
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.onetaptransit.NextArrivalsState
 import com.example.onetaptransit.TransitStop
 import com.example.onetaptransit.staticdata.VehicleStopTime
 
 @Composable
 fun NextArrivalsForStopDisplay(
     savedTransitStopsState: List<TransitStop>,
-    nextArrivalsState: Map<Int, List<VehicleStopTime>>,
+    nextArrivalsState: State<NextArrivalsState>,
     onStopBannerClick: (Int) -> Unit
 ) {
     Column() {
@@ -36,16 +40,27 @@ fun NextArrivalsForStopDisplay(
                     onStopBannerClick(transitStop.stopCode)
                 },
                 content = {
-                    Text(
-                        transitStop.stopCode.toString() + ": " + transitStop.externalStopName,
-                        fontSize = 32.sp,
-                        textAlign = TextAlign.Center
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Absolute.Left,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            modifier = Modifier.padding(start = 8.dp, end = 8.dp),
+                            text = transitStop.stopCode.toString() + ": " + transitStop.externalStopName,
+                            fontSize = 24.sp,
+                            textAlign = TextAlign.Left
+                        )
+                        val requestInProgress = nextArrivalsState.value.lastQueriedStopCode == transitStop.stopCode
+                        if (requestInProgress) {
+                            LinearProgressIndicator(color = Color.Yellow)
+                        }
+                    }
                 }
             )
 
-            if (nextArrivalsState.containsKey(transitStop.stopCode)) {
-                val nextArrivals = nextArrivalsState.getValue(transitStop.stopCode)
+            if (nextArrivalsState.value.nextArrivalsMap.containsKey(transitStop.stopCode)) {
+                val nextArrivals = nextArrivalsState.value.nextArrivalsMap.getValue(transitStop.stopCode)
                 for (nextArrival in nextArrivals) {
                     if (!transitStop.ignoreList.contains(nextArrival.tripHeadsign)) {
                         NextArrivalDisplay(nextArrival)

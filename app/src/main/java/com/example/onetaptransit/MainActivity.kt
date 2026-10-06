@@ -110,9 +110,11 @@ class MainActivity : ComponentActivity() {
                         )
 
 
+                        val nextArrivalsState = transitViewModel.nextArrivalsState.collectAsStateWithLifecycle()
+
                         NextArrivalsForStopDisplay(
                             transitViewModel.savedTransitStopsState,
-                            transitViewModel.nextArrivalsState,
+                            nextArrivalsState,
                             onStopBannerClick = { stopCode ->
                                 transitViewModel.queryNextArrival(
                                     stopCode,

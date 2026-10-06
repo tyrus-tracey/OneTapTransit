@@ -56,7 +56,7 @@ fun TextInputWithTestButton(
             isTaskDone,
             false,
             false,
-            {}
+            onQueryEventConsumed
         )
     }
 }

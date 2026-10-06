@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.asFlow
 import androidx.lifecycle.viewModelScope
@@ -44,11 +45,11 @@ class TransitViewModel @Inject constructor(
 ) : ViewModel() {
     private val _transitState = MutableStateFlow(TransitState())
     private val _gtfsStaticDataImportState = MutableStateFlow(GTFSStaticDataImportProgressState())
-    private val _nextArrivalsState = mutableStateMapOf<Int, List<VehicleStopTime>>()
+    private val _nextArrivalsState = MutableStateFlow(NextArrivalsState())
     private val _savedTransitStopsState = mutableStateListOf<TransitStop>()
     val transitState = _transitState.asStateFlow()
     val gtfsStaticDataImportState = _gtfsStaticDataImportState.asStateFlow()
-    val nextArrivalsState : Map<Int, List<VehicleStopTime>> get() = _nextArrivalsState
+    val nextArrivalsState = _nextArrivalsState.asStateFlow()
     val savedTransitStopsState : List<TransitStop> get() = _savedTransitStopsState
 
     /**
@@ -178,6 +179,7 @@ class TransitViewModel @Inject constructor(
         onQueryResponse: () -> Unit
     ) {
         viewModelScope.launch {
+            updateLastQueriedStopCode(stopCode)
             runCatching {
                 repo.getNextScheduledArrival(stopCode, true)
             }.onSuccess {
@@ -186,6 +188,7 @@ class TransitViewModel @Inject constructor(
             }.onFailure {
                 setQueryFailedState(true)
             }
+            updateLastQueriedStopCode(null)
             onQueryResponse()
         }
     }
@@ -224,8 +227,12 @@ class TransitViewModel @Inject constructor(
 
     //TODO: validate stopCode first by querying Stops, before updating HashMap
     fun updateNextArrivals(stopCode: Int, nextArrivalsForStop: List<VehicleStopTime>) {
-        _nextArrivalsState.clear() //TODO: tempfix for updating NextArrivalsForStopDisplay when querying a different stop from last
-        _nextArrivalsState[stopCode] = nextArrivalsForStop
+        _nextArrivalsState.value.nextArrivalsMap.clear() //TODO: tempfix for updating NextArrivalsForStopDisplay when querying a different stop from last
+        _nextArrivalsState.value.nextArrivalsMap[stopCode] = nextArrivalsForStop
+    }
+
+    fun updateLastQueriedStopCode(stopCode: Int?) {
+        _nextArrivalsState.update { it.copy(lastQueriedStopCode = stopCode) }
     }
 
     fun setQuerySuccessState(newState: Boolean) {
@@ -283,6 +290,11 @@ data class TransitState(
     val userEntryStopCode: String = "",
     val eQuerySuccess: Boolean = false,
     val eQueryFailed: Boolean = false
+)
+
+data class NextArrivalsState(
+    val nextArrivalsMap: SnapshotStateMap<Int, List<VehicleStopTime>> = mutableStateMapOf<Int, List<VehicleStopTime>>(),
+    val lastQueriedStopCode: Int? = null
 )
 
 data class GTFSStaticDataImportProgressState(
