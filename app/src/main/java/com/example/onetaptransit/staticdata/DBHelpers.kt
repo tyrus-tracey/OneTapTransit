@@ -123,6 +123,10 @@ class ServiceWeekday(operation: Int) {
     }
 }
 
+/**
+ * Describes the possible service exceptions according to calendar_dates.txt,
+ * which override a service defined in calendar.txt.
+ */
 enum class CalendarExceptionType {
     SERVICE_ADDED,
     SERVICE_REMOVED;

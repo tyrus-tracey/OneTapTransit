@@ -107,11 +107,19 @@ class StaticDataRepository @Inject constructor(
         return nextArrivals
     }
 
+    /**
+     * If the stopcode matches AT LEAST one Stop row, returns true.
+     * Returns false if no matches found.
+     */
     suspend fun validateStopCode(stopCode: String) : Boolean {
         val stops = staticDataDao.getStopsByStopCode(stopCode)
         return !stops.isEmpty()
     }
 
+    /**
+     * Returns a Stop row with matching stop code.
+     * If there are multiple matches (theoretically shouldn't), it will choose the lowest stop ID.
+     */
     suspend fun getStopByStopCode(stopCode: String) : Stop {
         return staticDataDao.getStopsByStopCode(stopCode).first()
     }

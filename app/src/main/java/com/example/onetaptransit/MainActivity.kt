@@ -19,9 +19,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.onetaptransit.composables.GTFSStaticDataImportDisplay
-import com.example.onetaptransit.composables.NextArrivalsForStopDisplay
 import com.example.onetaptransit.composables.TestButton
 import com.example.onetaptransit.composables.TextInputWithTestButton
+import com.example.onetaptransit.composables.UserSavedStopsDisplay
 import com.example.onetaptransit.notifications.cancelNotification
 import com.example.onetaptransit.ui.theme.OneTapTransitTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -121,8 +121,8 @@ class MainActivity : ComponentActivity() {
                             false
                         )
 
-                        NextArrivalsForStopDisplay(
-                            savedTransitStopsState.value.transitStops,
+                        UserSavedStopsDisplay(
+                            savedTransitStopsState.value.userSavedTransitStops,
                             nextArrivalsState,
                             onStopBannerClick = { stopCode ->
                                 transitViewModel.queryNextArrival(

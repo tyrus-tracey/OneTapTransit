@@ -57,8 +57,8 @@ fun TextInputWithTestButton(
             buttonPostTaskText,
             { onButtonClick() },
             isTaskDone,
-            savedTransitStopsState.value.addStopState == SimpleWorkState.SUCCESS,
-            savedTransitStopsState.value.addStopState == SimpleWorkState.FAILED,
+            savedTransitStopsState.value.addNewStopWorkState == SimpleWorkState.SUCCESS,
+            savedTransitStopsState.value.addNewStopWorkState == SimpleWorkState.FAILED,
             onQueryEventConsumed
         )
     }

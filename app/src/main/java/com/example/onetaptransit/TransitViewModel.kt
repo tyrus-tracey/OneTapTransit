@@ -171,7 +171,8 @@ class TransitViewModel @Inject constructor(
     }
 
     /**
-     * Read user's inputted StopCode from ViewModel and query for the next scheduled arrivals.
+     * Given a stopcode, query for the next scheduled arrivals.
+     * Caller is responsible for validating stopcode before querying.
      */
     fun queryNextArrival(
         stopCode: String,
@@ -199,6 +200,10 @@ class TransitViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Resets static import state and cancels import worker chain.
+     * NOTE: Calls pruneWork() to ensure work stops, but may cause unintended results. May require a work-around.
+     */
     fun cancelStaticDataImport(context: Context) {
         resetStaticImportState()
         WorkManager.getInstance(context).cancelUniqueWork(STATIC_DATA_IMPORT_UNIQUE_WORK_NAME)
@@ -211,9 +216,19 @@ class TransitViewModel @Inject constructor(
     }
 
     fun updateAddStopState(newState: SimpleWorkState) {
-        _savedTransitStopsState.update { it.copy(addStopState = newState) }
+        _savedTransitStopsState.update { it.copy(addNewStopWorkState = newState) }
     }
 
+    /**
+     * Reads the currently entered stop code value, validates stop code, then adds a new TransitStop
+     * to _savedTransitStopsState.userSavedTransitStops.
+     * Has side effect of modifying _savedTransitStopsState.addNewStopWorkState:
+     *  At start of function                -> IN_PROGRESS
+     *  If validation fails                 -> FAILED
+     *  If trying to save a duplicate stop  -> FAILED
+     *  Successfully saved a new stop       -> SUCCESS
+     * Caller is responsible for setting it back to STANDBY after handling work state result.
+     */
     fun saveTransitStop() {
         val userEntryStopCode = transitState.value.userEntryStopCode
         viewModelScope.launch {
@@ -225,13 +240,9 @@ class TransitViewModel @Inject constructor(
             }
 
             val stop = repo.getStopByStopCode(userEntryStopCode)
-            val transitStop = TransitStop(
-                stop.stopCode,
-                stop.stopName,
-                stop.stopName,
-                emptyList()
-            )
-            if (savedTransitStopsState.value.transitStops.contains(transitStop)) {
+            val transitStop = TransitStop(stop.stopCode, stop.stopName)
+
+            if (savedTransitStopsState.value.userSavedTransitStops.contains(transitStop)) {
                 updateAddStopState(SimpleWorkState.FAILED)
                 Log.d("TRACE", "Duplicate stop code.")
                 return@launch
@@ -239,7 +250,7 @@ class TransitViewModel @Inject constructor(
 
             _savedTransitStopsState.update { state ->
                 state.copy(
-                    transitStops = state.transitStops + transitStop
+                    userSavedTransitStops = state.userSavedTransitStops + transitStop
                 )
             }
             updateAddStopState(SimpleWorkState.SUCCESS)
@@ -249,12 +260,15 @@ class TransitViewModel @Inject constructor(
     fun removeTransitStop(transitStop: TransitStop) {
         _savedTransitStopsState.update { state ->
             state.copy(
-                transitStops = state.transitStops - transitStop
+                userSavedTransitStops = state.userSavedTransitStops - transitStop
             )
         }
     }
 
-    //TODO: validate stopCode first by querying Stops, before updating HashMap
+    /**
+     * Adds a new {stopcode, nextArrivals} key-value pair to _nextArrivalsState.nextArrivalsMap.
+     * Stopcode validation is the caller's responsibility.
+     */
     fun updateNextArrivals(stopCode: String, nextArrivalsForStop: List<VehicleStopTime>) {
         _nextArrivalsState.value.nextArrivalsMap.clear() //TODO: tempfix for updating NextArrivalsForStopDisplay when querying a different stop from last
         _nextArrivalsState.value.nextArrivalsMap[stopCode] = nextArrivalsForStop
@@ -276,6 +290,11 @@ class TransitViewModel @Inject constructor(
         _gtfsStaticDataImportState.update { it.copy(isLoading = newState) }
     }
 
+    /**
+     * Resets TransitViewModel's _gtfsStaticDataImportState:
+     *  isLoading = false
+     *  progress = 0 (for all GTFS Static Data tables)
+     */
     fun resetStaticImportState() {
         updateIsLoading(false)
         for (tableName in StaticDataTableName.entries) {
@@ -283,44 +302,48 @@ class TransitViewModel @Inject constructor(
         }
     }
 
-    fun updateImportProgress(table: StaticDataTableName, progress: Int, show_debug: Boolean = false) {
-        if (!(progress in 0..100)) {
+    /**
+     * Updates the progress value (0-100) for importing a given GTFS StaticData file.
+     */
+    fun updateImportProgress(table: StaticDataTableName, progress: Int, logOutput: Boolean = false) {
+        if (progress !in 0..100) {
             throw IllegalArgumentException("Invalid GTFS Static Data import progress value: $progress")
         }
 
-        fun log_progress(tableName: String, progress: Int) {
+        fun logProgress(tableName: String, progress: Int) {
             Log.d(tableName, "Imported: $progress%")
         }
 
         when (table) {
             StaticDataTableName.ROUTES -> {
                 _gtfsStaticDataImportState.update { it.copy(progRoutes = progress) }
-                if (show_debug) log_progress(table.name, gtfsStaticDataImportState.value.progRoutes)
+                if (logOutput) logProgress(table.name, gtfsStaticDataImportState.value.progRoutes)
             }
             StaticDataTableName.TRIPS -> {
                 _gtfsStaticDataImportState.update { it.copy(progTrips = progress) }
-                if (show_debug) log_progress(table.name, gtfsStaticDataImportState.value.progTrips)
+                if (logOutput) logProgress(table.name, gtfsStaticDataImportState.value.progTrips)
             }
             StaticDataTableName.CALENDAR -> {
                 _gtfsStaticDataImportState.update { it.copy(progCalendar = progress) }
-                if (show_debug) log_progress(table.name, gtfsStaticDataImportState.value.progCalendar)
+                if (logOutput) logProgress(table.name, gtfsStaticDataImportState.value.progCalendar)
             }
             StaticDataTableName.CALENDAR_DATES -> {
                 _gtfsStaticDataImportState.update { it.copy(progCalendarDates = progress) }
-                if (show_debug) log_progress(table.name, gtfsStaticDataImportState.value.progCalendarDates)
+                if (logOutput) logProgress(table.name, gtfsStaticDataImportState.value.progCalendarDates)
             }
             StaticDataTableName.STOPS -> {
                 _gtfsStaticDataImportState.update { it.copy(progStops = progress) }
-                if (show_debug) log_progress(table.name, gtfsStaticDataImportState.value.progStops)
+                if (logOutput) logProgress(table.name, gtfsStaticDataImportState.value.progStops)
             }
             StaticDataTableName.STOP_TIMES -> {
                 _gtfsStaticDataImportState.update { it.copy(progStopTimes = progress) }
-                if (show_debug) log_progress(table.name, gtfsStaticDataImportState.value.progStopTimes)
+                if (logOutput) logProgress(table.name, gtfsStaticDataImportState.value.progStopTimes)
             }
         }
     }
 }
 
+// General purpose state class
 data class TransitState(
     val realtimeFeed: FeedMessage = FeedMessage.getDefaultInstance(),
     val userEntryStopCode: String = "",
@@ -328,6 +351,7 @@ data class TransitState(
     val eQueryFailed: Boolean = false
 )
 
+// State class for GTFS Static Data import operations
 data class GTFSStaticDataImportProgressState(
     val isLoading: Boolean = false,
     val progRoutes: Int = 0,
@@ -338,14 +362,16 @@ data class GTFSStaticDataImportProgressState(
     val progStopTimes: Int = 0
 )
 
-enum class SimpleWorkState { STANDBY, IN_PROGRESS, SUCCESS, FAILED }
+// State class for when user adds saved stops
 data class SavedTransitStopsState(
-    val addStopState: SimpleWorkState = SimpleWorkState.STANDBY,
-    val transitStops: List<TransitStop> = emptyList()
+    val addNewStopWorkState: SimpleWorkState = SimpleWorkState.STANDBY,
+    val userSavedTransitStops: List<TransitStop> = emptyList()
 )
 
+// State class for when user queries for a stop's next arrivals.
 data class NextArrivalsState(
     val nextArrivalsMap: SnapshotStateMap<String, List<VehicleStopTime>> = mutableStateMapOf<String, List<VehicleStopTime>>(),
     val lastQueriedStopCode: String? = null
 )
 
+enum class SimpleWorkState { STANDBY, IN_PROGRESS, SUCCESS, FAILED }

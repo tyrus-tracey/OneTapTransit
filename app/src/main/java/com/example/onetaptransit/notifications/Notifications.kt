@@ -16,6 +16,10 @@ import com.example.onetaptransit.R
 
 private const val CHANNEL_ID = "channel_id"
 
+/**
+ * Creates a notification channel with low importance and no sound.
+ * User still needs to allow notifications for this app.
+ */
 fun createNotificationChannel(ctx: Context) {
     val name = "Data Sync Notifications"
     val descriptionText = "Notifications upon synchronization of GTFS Static and Realtime data from Translink servers."
@@ -29,6 +33,9 @@ fun createNotificationChannel(ctx: Context) {
     Log.d("Notification", "Notification channel created.")
 }
 
+/**
+ * Creates a notification that jumps to the Main Activity when clicked.
+ */
 fun launchNotification(
     unique_id: Int,
     title: String = "",
@@ -63,6 +70,12 @@ fun launchNotification(
     }
 }
 
+fun cancelNotification(unique_id: Int, ctx: Context) {
+    val notificationManager: NotificationManager = ctx.getSystemService(NotificationManager::class.java) as NotificationManager
+    notificationManager.cancel(unique_id)
+}
+
+// old code for displaying multiple progress bars in a single notification, using an XML layout
 //fun launchGTFSStaticImportNotification(
 //    unique_id: Int,
 //    progRoutes: Int,
@@ -102,7 +115,4 @@ fun launchNotification(
 //    }
 //}
 //
-fun cancelNotification(unique_id: Int, ctx: Context) {
-    val notificationManager: NotificationManager = ctx.getSystemService(NotificationManager::class.java) as NotificationManager
-    notificationManager.cancel(unique_id)
-}
+

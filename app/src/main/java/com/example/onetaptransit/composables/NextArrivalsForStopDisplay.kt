@@ -24,53 +24,75 @@ import com.example.onetaptransit.NextArrivalsState
 import com.example.onetaptransit.TransitStop
 import com.example.onetaptransit.staticdata.VehicleStopTime
 
+/**
+ * Displays a list of the user's saved stops.
+ * If a stop is queried for its next arrivals, will display next arrival information below that stop.
+ */
 @Composable
-fun NextArrivalsForStopDisplay(
+fun UserSavedStopsDisplay(
     savedTransitStopsState: List<TransitStop>,
     nextArrivalsState: State<NextArrivalsState>,
     onStopBannerClick: (String) -> Unit
 ) {
     Column() {
         for (transitStop in savedTransitStopsState) {
-            Button(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(Color.LightGray),
-                onClick = {
-                    onStopBannerClick(transitStop.stopCode)
-                },
-                content = {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Absolute.Left,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            modifier = Modifier.padding(start = 8.dp, end = 8.dp),
-                            text = transitStop.stopCode + ": " + transitStop.externalStopName,
-                            fontSize = 24.sp,
-                            textAlign = TextAlign.Left
-                        )
-                        val requestInProgress = nextArrivalsState.value.lastQueriedStopCode == transitStop.stopCode
-                        if (requestInProgress) {
-                            LinearProgressIndicator(color = Color.Yellow)
-                        }
-                    }
-                }
-            )
+            TransitStopBanner(transitStop, nextArrivalsState, onStopBannerClick)
+        }
+    }
+}
 
-            if (nextArrivalsState.value.nextArrivalsMap.containsKey(transitStop.stopCode)) {
-                val nextArrivals = nextArrivalsState.value.nextArrivalsMap.getValue(transitStop.stopCode)
-                for (nextArrival in nextArrivals) {
-                    if (!transitStop.ignoreList.contains(nextArrival.tripHeadsign)) {
-                        NextArrivalDisplay(nextArrival)
-                    }
+/**
+ * Displays a stop's stopcode and a short descriptor.
+ * Designed to be clicked to query for this stop's next arrivals; the stopcode is passed up to the viewModel.
+ */
+@Composable
+fun TransitStopBanner(
+    transitStop: TransitStop,
+    nextArrivalsState: State<NextArrivalsState>,
+    onBannerClick: (String) -> Unit
+) {
+    Button(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color.LightGray),
+        onClick = {
+            onBannerClick(transitStop.stopCode)
+        },
+        content = {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Absolute.Left,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    modifier = Modifier.padding(start = 8.dp, end = 8.dp),
+                    text = transitStop.stopCode + ": " + transitStop.externalStopName,
+                    fontSize = 24.sp,
+                    textAlign = TextAlign.Left
+                )
+                val requestInProgress = nextArrivalsState.value.lastQueriedStopCode == transitStop.stopCode
+                if (requestInProgress) {
+                    LinearProgressIndicator(color = Color.Yellow)
                 }
+            }
+        }
+    )
+
+    // If the viewModel state contains this stop's stopcode, retrieve its next arrivals.
+    // For each arrival time, create a NextArrivalDisplay composable.
+    if (nextArrivalsState.value.nextArrivalsMap.containsKey(transitStop.stopCode)) {
+        val nextArrivals = nextArrivalsState.value.nextArrivalsMap.getValue(transitStop.stopCode)
+        for (nextArrival in nextArrivals) {
+            if (!transitStop.ignoreList.contains(nextArrival.tripHeadsign)) {
+                NextArrivalDisplay(nextArrival)
             }
         }
     }
 }
 
+/**
+ * Displays a single next arrival time, including route and headsign information.
+ */
 @Composable
 fun NextArrivalDisplay(
     nextArrival: VehicleStopTime
