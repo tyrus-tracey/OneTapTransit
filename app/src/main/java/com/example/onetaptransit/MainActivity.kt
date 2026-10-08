@@ -102,23 +102,27 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
+
+                        val nextArrivalsState = transitViewModel.nextArrivalsState.collectAsStateWithLifecycle()
+                        val savedTransitStopsState = transitViewModel.savedTransitStopsState.collectAsStateWithLifecycle()
+
                         TextInputWithTestButton(
                             transitViewModel.transitState.collectAsStateWithLifecycle(), //TODO: save transitState as -> val state by ...
+                            savedTransitStopsState,
                             "Add Stop",
                             "Add Stop",
                             transitViewModel::updateUserEntryStopCode,
                             {
                                 transitViewModel.saveTransitStop()
                             },
-                            {},
+                            {
+                                transitViewModel.updateAddStopState(SimpleWorkState.STANDBY)
+                            },
                             false
                         )
 
-
-                        val nextArrivalsState = transitViewModel.nextArrivalsState.collectAsStateWithLifecycle()
-
                         NextArrivalsForStopDisplay(
-                            transitViewModel.savedTransitStopsState,
+                            savedTransitStopsState.value.transitStops,
                             nextArrivalsState,
                             onStopBannerClick = { stopCode ->
                                 transitViewModel.queryNextArrival(

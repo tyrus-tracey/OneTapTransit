@@ -124,6 +124,17 @@ interface StaticDataDao {
         ORDER BY StopTime.arrival_time ASC
     """)
     suspend fun getNextScheduledArrivalForStop(
-        stopCode: Int, date: String, weekday: String, time: Long
+        stopCode: String, date: String, weekday: String, time: Long
     ): List<VehicleStopTime>
+
+    @Transaction
+    @Query("""
+        SELECT DISTINCT *
+        FROM Stop
+        where Stop.stop_code = :stopCode
+        ORDER BY Stop.stop_id ASC
+    """)
+    suspend fun getStopsByStopCode(
+        stopCode: String
+    ): List<Stop>
 }

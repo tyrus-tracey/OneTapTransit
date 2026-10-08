@@ -13,11 +13,14 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.KeyboardType
+import com.example.onetaptransit.SavedTransitStopsState
+import com.example.onetaptransit.SimpleWorkState
 import com.example.onetaptransit.TransitState
 
 @Composable
 fun TextInputWithTestButton(
     transitState: State<TransitState>,
+    savedTransitStopsState: State<SavedTransitStopsState>,
     buttonDisplayText: String,
     buttonPostTaskText: String,
     onTextValueChange: (String) -> Unit,
@@ -54,8 +57,8 @@ fun TextInputWithTestButton(
             buttonPostTaskText,
             { onButtonClick() },
             isTaskDone,
-            false,
-            false,
+            savedTransitStopsState.value.addStopState == SimpleWorkState.SUCCESS,
+            savedTransitStopsState.value.addStopState == SimpleWorkState.FAILED,
             onQueryEventConsumed
         )
     }

@@ -59,7 +59,7 @@ class StaticDataRepository @Inject constructor(
     }
 
     /** For a given stop, return the next scheduled arrivals for all routes (grouped by trip headsign)*/
-    suspend fun getNextScheduledArrival(stopCode: Int, show_debug: Boolean) : List<VehicleStopTime> {
+    suspend fun getNextScheduledArrival(stopCode: String, show_debug: Boolean) : List<VehicleStopTime> {
         // Assuming schedule times don't exceed 48:00:00, if so extend (could query for max timestamp in order to make sure)
         // represents how many days to look back for querying next arrival
         // for example, if querying at 1:15AM, we should query:
@@ -92,7 +92,7 @@ class StaticDataRepository @Inject constructor(
             val s = LocalTime.now().second
             val time = ServiceTime(h, m , s)
 
-            if (show_debug) Log.d("INPUT", listOf<String>(stopCode.toString(), date, weekday.toString(), time.toString()).toString())
+            if (show_debug) Log.d("INPUT", listOf(stopCode, date, weekday.toString(), time.toString()).toString())
             candidates += staticDataDao.getNextScheduledArrivalForStop(stopCode, date, weekday.toString(), time.time)
         }
 
@@ -105,6 +105,15 @@ class StaticDataRepository @Inject constructor(
         }
 
         return nextArrivals
+    }
+
+    suspend fun validateStopCode(stopCode: String) : Boolean {
+        val stops = staticDataDao.getStopsByStopCode(stopCode)
+        return !stops.isEmpty()
+    }
+
+    suspend fun getStopByStopCode(stopCode: String) : Stop {
+        return staticDataDao.getStopsByStopCode(stopCode).first()
     }
 
     /**

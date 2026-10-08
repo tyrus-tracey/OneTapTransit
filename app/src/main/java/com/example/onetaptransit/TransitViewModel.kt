@@ -2,7 +2,6 @@ package com.example.onetaptransit
 
 import android.content.Context
 import android.util.Log
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.lifecycle.ViewModel
@@ -46,11 +45,11 @@ class TransitViewModel @Inject constructor(
     private val _transitState = MutableStateFlow(TransitState())
     private val _gtfsStaticDataImportState = MutableStateFlow(GTFSStaticDataImportProgressState())
     private val _nextArrivalsState = MutableStateFlow(NextArrivalsState())
-    private val _savedTransitStopsState = mutableStateListOf<TransitStop>()
+    private val _savedTransitStopsState = MutableStateFlow(SavedTransitStopsState())
     val transitState = _transitState.asStateFlow()
     val gtfsStaticDataImportState = _gtfsStaticDataImportState.asStateFlow()
     val nextArrivalsState = _nextArrivalsState.asStateFlow()
-    val savedTransitStopsState : List<TransitStop> get() = _savedTransitStopsState
+    val savedTransitStopsState = _savedTransitStopsState.asStateFlow()
 
     /**
      * Fetch feed from Translink API.
@@ -175,7 +174,7 @@ class TransitViewModel @Inject constructor(
      * Read user's inputted StopCode from ViewModel and query for the next scheduled arrivals.
      */
     fun queryNextArrival(
-        stopCode: Int,
+        stopCode: String,
         onQueryResponse: () -> Unit
     ) {
         viewModelScope.launch {
@@ -211,25 +210,57 @@ class TransitViewModel @Inject constructor(
         _transitState.update { it.copy(userEntryStopCode = newStopCode) }
     }
 
+    fun updateAddStopState(newState: SimpleWorkState) {
+        _savedTransitStopsState.update { it.copy(addStopState = newState) }
+    }
+
     fun saveTransitStop() {
-        val stopCode = transitState.value.userEntryStopCode.toInt()
-        val transitStop = TransitStop(stopCode, "internal", "external")
-        if (!_savedTransitStopsState.contains(transitStop)) {
-            _savedTransitStopsState.add(transitStop)
+        val userEntryStopCode = transitState.value.userEntryStopCode
+        viewModelScope.launch {
+            updateAddStopState(SimpleWorkState.IN_PROGRESS)
+            if (!repo.validateStopCode(userEntryStopCode)) {
+                updateAddStopState(SimpleWorkState.FAILED)
+                Log.d("TRACE", "Invalid stop code.")
+                return@launch
+            }
+
+            val stop = repo.getStopByStopCode(userEntryStopCode)
+            val transitStop = TransitStop(
+                stop.stopCode,
+                stop.stopName,
+                stop.stopName,
+                emptyList()
+            )
+            if (savedTransitStopsState.value.transitStops.contains(transitStop)) {
+                updateAddStopState(SimpleWorkState.FAILED)
+                Log.d("TRACE", "Duplicate stop code.")
+                return@launch
+            }
+
+            _savedTransitStopsState.update { state ->
+                state.copy(
+                    transitStops = state.transitStops + transitStop
+                )
+            }
+            updateAddStopState(SimpleWorkState.SUCCESS)
         }
     }
 
     fun removeTransitStop(transitStop: TransitStop) {
-        _savedTransitStopsState.remove(transitStop)
+        _savedTransitStopsState.update { state ->
+            state.copy(
+                transitStops = state.transitStops - transitStop
+            )
+        }
     }
 
     //TODO: validate stopCode first by querying Stops, before updating HashMap
-    fun updateNextArrivals(stopCode: Int, nextArrivalsForStop: List<VehicleStopTime>) {
+    fun updateNextArrivals(stopCode: String, nextArrivalsForStop: List<VehicleStopTime>) {
         _nextArrivalsState.value.nextArrivalsMap.clear() //TODO: tempfix for updating NextArrivalsForStopDisplay when querying a different stop from last
         _nextArrivalsState.value.nextArrivalsMap[stopCode] = nextArrivalsForStop
     }
 
-    fun updateLastQueriedStopCode(stopCode: Int?) {
+    fun updateLastQueriedStopCode(stopCode: String?) {
         _nextArrivalsState.update { it.copy(lastQueriedStopCode = stopCode) }
     }
 
@@ -297,11 +328,6 @@ data class TransitState(
     val eQueryFailed: Boolean = false
 )
 
-data class NextArrivalsState(
-    val nextArrivalsMap: SnapshotStateMap<Int, List<VehicleStopTime>> = mutableStateMapOf<Int, List<VehicleStopTime>>(),
-    val lastQueriedStopCode: Int? = null
-)
-
 data class GTFSStaticDataImportProgressState(
     val isLoading: Boolean = false,
     val progRoutes: Int = 0,
@@ -311,3 +337,15 @@ data class GTFSStaticDataImportProgressState(
     val progStops: Int = 0,
     val progStopTimes: Int = 0
 )
+
+enum class SimpleWorkState { STANDBY, IN_PROGRESS, SUCCESS, FAILED }
+data class SavedTransitStopsState(
+    val addStopState: SimpleWorkState = SimpleWorkState.STANDBY,
+    val transitStops: List<TransitStop> = emptyList()
+)
+
+data class NextArrivalsState(
+    val nextArrivalsMap: SnapshotStateMap<String, List<VehicleStopTime>> = mutableStateMapOf<String, List<VehicleStopTime>>(),
+    val lastQueriedStopCode: String? = null
+)
+

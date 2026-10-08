@@ -28,7 +28,7 @@ import com.example.onetaptransit.staticdata.VehicleStopTime
 fun NextArrivalsForStopDisplay(
     savedTransitStopsState: List<TransitStop>,
     nextArrivalsState: State<NextArrivalsState>,
-    onStopBannerClick: (Int) -> Unit
+    onStopBannerClick: (String) -> Unit
 ) {
     Column() {
         for (transitStop in savedTransitStopsState) {
@@ -47,7 +47,7 @@ fun NextArrivalsForStopDisplay(
                     ) {
                         Text(
                             modifier = Modifier.padding(start = 8.dp, end = 8.dp),
-                            text = transitStop.stopCode.toString() + ": " + transitStop.externalStopName,
+                            text = transitStop.stopCode + ": " + transitStop.externalStopName,
                             fontSize = 24.sp,
                             textAlign = TextAlign.Left
                         )
