@@ -53,6 +53,7 @@ class MainActivity : ComponentActivity() {
                     ) {
                         var staticDataUpdated by rememberSaveable { mutableStateOf(false) }
                         var realtimeUpdated by rememberSaveable { mutableStateOf(false) }
+                        var tablesTruncated by rememberSaveable { mutableStateOf(false) }
 
                         Row() {
                             TestButton(
@@ -85,15 +86,19 @@ class MainActivity : ComponentActivity() {
                             )
 
                             TestButton(
-                                "truncate stops",
-                                "done!",
+                                "Truncate Stops",
+                                "Truncate Stops",
                                 onButtonClick = {
-                                    transitViewModel.truncateAllTables() { }
+                                    transitViewModel.truncateAllTables() {
+                                        tablesTruncated = true
+                                    }
                                 },
                                 false,
+                                tablesTruncated,
                                 false,
-                                false,
-                                {}
+                                {
+                                    tablesTruncated = false
+                                }
                             )
                         }
 

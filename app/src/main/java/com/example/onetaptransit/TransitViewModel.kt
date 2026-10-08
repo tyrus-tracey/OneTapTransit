@@ -195,9 +195,7 @@ class TransitViewModel @Inject constructor(
 
     fun truncateAllTables(onProcessComplete: () -> Unit) {
         viewModelScope.launch {
-            Log.d("TRACE", "- - - TRUNCATE START - - -")
             repo.truncateAllTables()
-            Log.d("TRACE", "- - - TRUNCATE END - - -")
             onProcessComplete()
         }
     }
