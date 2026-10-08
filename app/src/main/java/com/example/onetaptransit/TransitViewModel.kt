@@ -201,7 +201,7 @@ class TransitViewModel @Inject constructor(
     }
 
     fun cancelStaticDataImport(context: Context) {
-        updateIsLoading(false)
+        resetStaticImportState()
         WorkManager.getInstance(context).cancelUniqueWork(STATIC_DATA_IMPORT_UNIQUE_WORK_NAME)
         importProgressObserver?.cancel()
         WorkManager.getInstance(context).pruneWork()
@@ -243,6 +243,13 @@ class TransitViewModel @Inject constructor(
 
     fun updateIsLoading(newState: Boolean) {
         _gtfsStaticDataImportState.update { it.copy(isLoading = newState) }
+    }
+
+    fun resetStaticImportState() {
+        updateIsLoading(false)
+        for (tableName in StaticDataTableName.entries) {
+            updateImportProgress(tableName, 0)
+        }
     }
 
     fun updateImportProgress(table: StaticDataTableName, progress: Int, show_debug: Boolean = false) {
