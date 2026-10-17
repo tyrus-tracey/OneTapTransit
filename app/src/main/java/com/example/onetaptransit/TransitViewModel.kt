@@ -270,7 +270,6 @@ class TransitViewModel @Inject constructor(
      * Stopcode validation is the caller's responsibility.
      */
     fun updateNextArrivals(stopCode: String, nextArrivalsForStop: List<VehicleStopTime>) {
-        _nextArrivalsState.value.nextArrivalsMap.clear() //TODO: tempfix for updating NextArrivalsForStopDisplay when querying a different stop from last
         _nextArrivalsState.value.nextArrivalsMap[stopCode] = nextArrivalsForStop
     }
 
