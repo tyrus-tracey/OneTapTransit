@@ -1,14 +1,15 @@
 package com.example.onetaptransit.composables
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.TextAutoSize
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
@@ -34,7 +35,10 @@ fun UserSavedStopsDisplay(
     nextArrivalsState: State<NextArrivalsState>,
     onStopBannerClick: (String) -> Unit
 ) {
-    Column() {
+    Column(modifier = Modifier
+        .background(Color.Gray)
+        .verticalScroll(rememberScrollState())
+    ) {
         for (transitStop in savedTransitStopsState) {
             TransitStopBanner(transitStop, nextArrivalsState, onStopBannerClick)
         }
@@ -51,40 +55,58 @@ fun TransitStopBanner(
     nextArrivalsState: State<NextArrivalsState>,
     onBannerClick: (String) -> Unit
 ) {
-    Button(
+    Column(
         modifier = Modifier
-            .fillMaxWidth()
-            .background(Color.LightGray),
-        onClick = {
-            onBannerClick(transitStop.stopCode)
-        },
-        content = {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Absolute.Left,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    modifier = Modifier.padding(start = 8.dp, end = 8.dp),
-                    text = transitStop.stopCode + ": " + transitStop.externalStopName,
-                    fontSize = 24.sp,
-                    textAlign = TextAlign.Left
-                )
-                val requestInProgress = nextArrivalsState.value.lastQueriedStopCode == transitStop.stopCode
-                if (requestInProgress) {
-                    LinearProgressIndicator(color = Color.Yellow)
+            .padding(bottom = 8.dp)
+            .background(Color.LightGray)
+    ) {
+        Button(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(all = 4.dp),
+            onClick = {
+                onBannerClick(transitStop.stopCode)
+            },
+            content = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        modifier = Modifier.padding(start = 8.dp, end = 8.dp),
+                        text = transitStop.stopCode + " " + transitStop.externalStopName,
+                        fontSize = 18.sp,
+                        textAlign = TextAlign.Left
+                    )
+                    val requestInProgress =
+                        nextArrivalsState.value.lastQueriedStopCode == transitStop.stopCode
+                    Box(
+                        modifier = Modifier.height(8.dp)
+                    ) {
+                        if (requestInProgress) {
+                            LinearProgressIndicator(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(2.dp),
+                                color = Color.Yellow
+                            )
+                        }
+                    }
                 }
             }
-        }
-    )
+        )
 
-    // If the viewModel state contains this stop's stopcode, retrieve its next arrivals.
-    // For each arrival time, create a NextArrivalDisplay composable.
-    if (nextArrivalsState.value.nextArrivalsMap.containsKey(transitStop.stopCode)) {
-        val nextArrivals = nextArrivalsState.value.nextArrivalsMap.getValue(transitStop.stopCode)
-        for (nextArrival in nextArrivals) {
-            if (!transitStop.ignoreList.contains(nextArrival.tripHeadsign)) {
-                NextArrivalDisplay(nextArrival)
+        // If the viewModel state contains this stop's stopcode, retrieve its next arrivals.
+        // For each arrival time, create a NextArrivalDisplay composable.
+
+        if (nextArrivalsState.value.nextArrivalsMap.containsKey(transitStop.stopCode)) {
+            val nextArrivals =
+                nextArrivalsState.value.nextArrivalsMap.getValue(transitStop.stopCode)
+            for (nextArrival in nextArrivals) {
+                if (!transitStop.ignoreList.contains(nextArrival.tripHeadsign)) {
+                    NextArrivalDisplay(nextArrival)
+                }
             }
         }
     }
@@ -97,57 +119,58 @@ fun TransitStopBanner(
 fun NextArrivalDisplay(
     nextArrival: VehicleStopTime
 ) {
-    Box(modifier = Modifier
-        .background(Color.Black)
-        .padding(bottom = 1.dp)) {
-        Row(
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 2.dp, end = 2.dp)
+            .height(64.dp)
+            .background(Color(android.graphics.Color.BLUE)),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        val headsignNumber = nextArrival.tripHeadsign.substringBefore(' ')
+        val headsignName = nextArrival.tripHeadsign.substringAfter(' ')
+        val textColor = Color(android.graphics.Color.rgb(250, 200, 40))
+
+        // Route number
+        Text(
+            headsignNumber,
+            color = textColor,
+            modifier = Modifier
+                .fillMaxWidth(0.175f)
+                .padding(4.dp),
+            maxLines = 1,
+            autoSize = TextAutoSize.StepBased(24.sp, 32.sp),
+            textAlign = TextAlign.End,
+        )
+
+        // Headsign
+        Text(
+            headsignName,
+            color = textColor,
+            modifier = Modifier
+                .fillMaxWidth(0.60f)
+                .padding(start = 8.dp, end = 4.dp),
+            textAlign = TextAlign.Start,
+            fontSize = 18.sp
+        )
+
+        // Time
+        val arrivalTimeText =
+            if (nextArrival.arrivalTime.time == 0L) {
+                "--:--:--"
+            } else {
+                nextArrival.arrivalTime.toString()
+            }
+        val arrivalTimeTextColor = Color.Yellow
+        Text(
+            arrivalTimeText,
+            color = arrivalTimeTextColor,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(100.dp)
-                .background(Color(android.graphics.Color.BLUE)),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            val headsignNumber = nextArrival.tripHeadsign.substringBefore(' ')
-            val headsignName = nextArrival.tripHeadsign.substringAfter(' ')
-            val textColor = Color(android.graphics.Color.rgb(250, 200, 40))
-
-            Text(
-                headsignNumber,
-                color = textColor,
-                modifier = Modifier
-                    .fillMaxWidth(0.175f)
-                    .padding(4.dp),
-                maxLines = 1,
-                autoSize = TextAutoSize.StepBased(24.sp, 32.sp),
-                textAlign = TextAlign.End,
-            )
-            Text(
-                headsignName,
-                color = textColor,
-                modifier = Modifier
-                    .fillMaxWidth(0.60f)
-                    .padding(start = 12.dp, end = 8.dp),
-                textAlign = TextAlign.Start,
-                fontSize = 24.sp
-            )
-
-            val arrivalTimeText =
-                if (nextArrival.arrivalTime.time == 0L) {
-                    "--:--:--"
-                } else {
-                    nextArrival.arrivalTime.toString()
-                }
-            val arrivalTimeTextColor = Color.Yellow
-            Text(
-                arrivalTimeText,
-                color = arrivalTimeTextColor,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(end = 8.dp),
-                maxLines = 1,
-                autoSize = TextAutoSize.StepBased(8.sp, 32.sp),
-                textAlign = TextAlign.End,
-            )
-        }
+                .padding(end = 8.dp),
+            maxLines = 1,
+            autoSize = TextAutoSize.StepBased(8.sp, 24.sp),
+            textAlign = TextAlign.End,
+        )
     }
 }

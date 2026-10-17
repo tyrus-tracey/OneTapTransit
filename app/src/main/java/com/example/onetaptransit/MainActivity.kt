@@ -5,18 +5,16 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.onetaptransit.composables.GTFSStaticDataImportDisplay
 import com.example.onetaptransit.composables.TestButton
@@ -44,12 +42,31 @@ class MainActivity : ComponentActivity() {
                     )
                 }
 
-                Box(modifier = Modifier
-                    .fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
+                val nextArrivalsState = transitViewModel.nextArrivalsState.collectAsStateWithLifecycle()
+                val savedTransitStopsState = transitViewModel.savedTransitStopsState.collectAsStateWithLifecycle()
+
+                Scaffold(
+                    modifier = Modifier.imePadding(),
+                    bottomBar = {
+                        TextInputWithTestButton(
+                            transitViewModel.transitState.collectAsStateWithLifecycle(), //TODO: save transitState as -> val state by ...
+                            savedTransitStopsState,
+                            "Add Stop",
+                            "Add Stop",
+                            transitViewModel::updateUserEntryStopCode,
+                            {
+                                transitViewModel.saveTransitStop()
+                            },
+                            {
+                                transitViewModel.updateAddStopState(SimpleWorkState.STANDBY)
+                            },
+                            false
+                        )
+                    }
+                ) { innerPadding ->
                     Column(
-                        modifier = Modifier.padding(horizontal = 0.dp, vertical = 128.dp)
+                        modifier = Modifier
+                            .padding(innerPadding)
                     ) {
                         var staticDataUpdated by rememberSaveable { mutableStateOf(false) }
                         var realtimeUpdated by rememberSaveable { mutableStateOf(false) }
@@ -101,25 +118,6 @@ class MainActivity : ComponentActivity() {
                                 }
                             )
                         }
-
-
-                        val nextArrivalsState = transitViewModel.nextArrivalsState.collectAsStateWithLifecycle()
-                        val savedTransitStopsState = transitViewModel.savedTransitStopsState.collectAsStateWithLifecycle()
-
-                        TextInputWithTestButton(
-                            transitViewModel.transitState.collectAsStateWithLifecycle(), //TODO: save transitState as -> val state by ...
-                            savedTransitStopsState,
-                            "Add Stop",
-                            "Add Stop",
-                            transitViewModel::updateUserEntryStopCode,
-                            {
-                                transitViewModel.saveTransitStop()
-                            },
-                            {
-                                transitViewModel.updateAddStopState(SimpleWorkState.STANDBY)
-                            },
-                            false
-                        )
 
                         UserSavedStopsDisplay(
                             savedTransitStopsState.value.userSavedTransitStops,
