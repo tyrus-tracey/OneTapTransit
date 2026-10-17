@@ -57,7 +57,7 @@ fun TransitStopBanner(
 ) {
     Column(
         modifier = Modifier
-            .padding(bottom = 8.dp)
+            .padding(all = 4.dp)
             .background(Color.LightGray)
     ) {
         Button(
