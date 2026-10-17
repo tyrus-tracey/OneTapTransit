@@ -34,6 +34,9 @@ class MainActivity : ComponentActivity() {
             OneTapTransitTheme {
                 val transitViewModel: TransitViewModel by viewModels()
                 val gtfsStaticDataImportState by transitViewModel.gtfsStaticDataImportState.collectAsStateWithLifecycle()
+                val transitState = transitViewModel.transitState.collectAsStateWithLifecycle()
+                val nextArrivalsState = transitViewModel.nextArrivalsState.collectAsStateWithLifecycle()
+                val savedTransitStopsState = transitViewModel.savedTransitStopsState.collectAsStateWithLifecycle()
 
                 if (gtfsStaticDataImportState.isLoading) {
                     GTFSStaticDataImportDisplay(
@@ -42,14 +45,11 @@ class MainActivity : ComponentActivity() {
                     )
                 }
 
-                val nextArrivalsState = transitViewModel.nextArrivalsState.collectAsStateWithLifecycle()
-                val savedTransitStopsState = transitViewModel.savedTransitStopsState.collectAsStateWithLifecycle()
-
                 Scaffold(
                     modifier = Modifier.imePadding(),
                     bottomBar = {
                         TextInputWithTestButton(
-                            transitViewModel.transitState.collectAsStateWithLifecycle(), //TODO: save transitState as -> val state by ...
+                            transitState,
                             savedTransitStopsState,
                             "Add Stop",
                             "Add Stop",
