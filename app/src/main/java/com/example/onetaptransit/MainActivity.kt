@@ -9,12 +9,17 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.onetaptransit.composables.GTFSStaticDataImportDisplay
 import com.example.onetaptransit.composables.TestButton
@@ -119,6 +124,10 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
+                        var showRemoveStopAlertDialog by rememberSaveable { mutableStateOf(false) }
+                        var tempStopCode by rememberSaveable { mutableStateOf("") }
+                        var tempStopName by rememberSaveable { mutableStateOf("") }
+
                         UserSavedStopsDisplay(
                             savedTransitStopsState.value.userSavedTransitStops,
                             nextArrivalsState,
@@ -127,8 +136,25 @@ class MainActivity : ComponentActivity() {
                                     stopCode,
                                     onQueryResponse = {}
                                 )
+                            },
+                            onStopBannerLongClick = { stopCode, stopName ->
+                                tempStopCode = stopCode
+                                tempStopName = stopName
+                                showRemoveStopAlertDialog = true
                             }
                         )
+
+                        if (showRemoveStopAlertDialog) {
+                            AlertDialog(
+                                onDismissRequest = {showRemoveStopAlertDialog = false},
+                                confirmButton = {TextButton(onClick = { showRemoveStopAlertDialog = false }) { Text("OK") }},
+                                dismissButton = {TextButton(onClick = { showRemoveStopAlertDialog = false }) { Text("Cancel") }},
+                                title = {Text(text="Remove Stop?")},
+                                text = {
+                                    Text(text="$tempStopCode $tempStopName", fontSize=16.sp, textAlign = TextAlign.Center)
+                                }
+                            )
+                        }
                     }
                 }
             }

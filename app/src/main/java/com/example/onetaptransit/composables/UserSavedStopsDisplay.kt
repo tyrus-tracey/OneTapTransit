@@ -1,6 +1,7 @@
 package com.example.onetaptransit.composables
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,7 +11,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -33,14 +33,20 @@ import com.example.onetaptransit.staticdata.VehicleStopTime
 fun UserSavedStopsDisplay(
     savedTransitStopsState: List<TransitStop>,
     nextArrivalsState: State<NextArrivalsState>,
-    onStopBannerClick: (String) -> Unit
+    onStopBannerClick: (String) -> Unit,
+    onStopBannerLongClick: (String, String) -> Unit
 ) {
     Column(modifier = Modifier
         .background(Color.Gray)
         .verticalScroll(rememberScrollState())
     ) {
         for (transitStop in savedTransitStopsState) {
-            TransitStopBanner(transitStop, nextArrivalsState, onStopBannerClick)
+            TransitStopBanner(
+                transitStop,
+                nextArrivalsState,
+                onStopBannerClick,
+                onStopBannerLongClick,
+            )
         }
     }
 }
@@ -48,54 +54,61 @@ fun UserSavedStopsDisplay(
 /**
  * Displays a stop's stopcode and a short descriptor.
  * Designed to be clicked to query for this stop's next arrivals; the stopcode is passed up to the viewModel.
+ * If long-clicked, will pass up stopcode & stopname to create an alert dialog to remove this stop.
  */
 @Composable
 fun TransitStopBanner(
     transitStop: TransitStop,
     nextArrivalsState: State<NextArrivalsState>,
-    onBannerClick: (String) -> Unit
+    onClick: (String) -> Unit,
+    onLongClick: (String, String) -> Unit
 ) {
     Column(
         modifier = Modifier
             .padding(all = 4.dp)
             .background(Color.LightGray)
     ) {
-        Button(
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(all = 4.dp),
-            onClick = {
-                onBannerClick(transitStop.stopCode)
-            },
-            content = {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                .padding(all = 4.dp)
+                .combinedClickable(
+                    onClick = {
+                        onClick(transitStop.stopCode)
+                    },
+                    onLongClick = {
+                        onLongClick(transitStop.stopCode, transitStop.externalStopName)
+                    }
+                )
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    modifier = Modifier.padding(start = 8.dp, end = 8.dp),
+                    text = transitStop.stopCode + " " + transitStop.externalStopName,
+                    fontSize = 18.sp,
+                    textAlign = TextAlign.Left
+                )
+                val requestInProgress =
+                    nextArrivalsState.value.lastQueriedStopCode == transitStop.stopCode
+                Box(
+                    modifier = Modifier.height(8.dp)
                 ) {
-                    Text(
-                        modifier = Modifier.padding(start = 8.dp, end = 8.dp),
-                        text = transitStop.stopCode + " " + transitStop.externalStopName,
-                        fontSize = 18.sp,
-                        textAlign = TextAlign.Left
-                    )
-                    val requestInProgress =
-                        nextArrivalsState.value.lastQueriedStopCode == transitStop.stopCode
-                    Box(
-                        modifier = Modifier.height(8.dp)
-                    ) {
-                        if (requestInProgress) {
-                            LinearProgressIndicator(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(2.dp),
-                                color = Color.Yellow
-                            )
-                        }
+                    if (requestInProgress) {
+                        LinearProgressIndicator(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(2.dp),
+                            color = Color.Yellow
+                        )
                     }
                 }
             }
-        )
+        }
+
 
         // If the viewModel state contains this stop's stopcode, retrieve its next arrivals.
         // For each arrival time, create a NextArrivalDisplay composable.
