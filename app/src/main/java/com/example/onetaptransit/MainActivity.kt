@@ -125,9 +125,7 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
-                        var showRemoveStopAlertDialog by rememberSaveable { mutableStateOf(false) }
-                        var tempStopCode : String? by rememberSaveable { mutableStateOf("") }
-                        var tempStopName : String? by rememberSaveable { mutableStateOf("") }
+
 
                         UserSavedStopsDisplay(
                             savedTransitStopsState.value.userSavedTransitStops,
@@ -139,36 +137,34 @@ class MainActivity : ComponentActivity() {
                                 )
                             },
                             onStopBannerLongClick = { stopCode, stopName ->
-                                tempStopCode = stopCode
-                                tempStopName = stopName
-                                showRemoveStopAlertDialog = true
+                                transitViewModel.updateLongClickedTransitStop(stopCode, stopName)
+                                transitViewModel.updateShowRemoveStopAlertDialog(true)
                             }
                         )
 
-                        if (showRemoveStopAlertDialog) {
-                            if (tempStopCode == null || tempStopName == null) {
-                                Log.e("MAIN ACTIVITY", "Attempted to create Alert Dialog, but selected transitStop state value is null: tempStopCode: $tempStopCode, tempStopName: $tempStopName")
+                        if (savedTransitStopsState.value.showRemoveStopAlertDialog) {
+                            val stopCode = savedTransitStopsState.value.longClickedStopCode
+                            val stopName = savedTransitStopsState.value.longClickedStopName
+                            if (stopCode == null || stopName == null) {
+                                Log.e("MAIN ACTIVITY", "Attempted to create Alert Dialog, but selected transitStop state value is null: stopCode: $stopCode, stopName: $stopName")
                             } else {
                                 AlertDialog(
-                                    onDismissRequest = { showRemoveStopAlertDialog = false },
+                                    onDismissRequest = { transitViewModel.updateShowRemoveStopAlertDialog(false) },
                                     confirmButton = {
                                         TextButton(onClick = {
-                                            transitViewModel.removeTransitStopByStopCode(
-                                                tempStopCode!!
-                                            )
-                                            tempStopCode
-                                            showRemoveStopAlertDialog = false
+                                            transitViewModel.removeTransitStopByStopCode(stopCode)
+                                            transitViewModel.updateShowRemoveStopAlertDialog(false)
                                         }) { Text("OK") }
                                     },
                                     dismissButton = {
                                         TextButton(onClick = {
-                                            showRemoveStopAlertDialog = false
+                                            transitViewModel.updateShowRemoveStopAlertDialog(false)
                                         }) { Text("Cancel") }
                                     },
                                     title = { Text(text = "Remove Stop?") },
                                     text = {
                                         Text(
-                                            text = "$tempStopCode $tempStopName",
+                                            text = "$stopCode $stopName",
                                             fontSize = 16.sp,
                                             textAlign = TextAlign.Center
                                         )

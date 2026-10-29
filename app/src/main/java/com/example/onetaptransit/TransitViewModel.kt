@@ -284,6 +284,17 @@ class TransitViewModel @Inject constructor(
         updateNextArrivals(stopCode, emptyList())
     }
 
+    fun updateShowRemoveStopAlertDialog(newState: Boolean) {
+        _savedTransitStopsState.update { it.copy(showRemoveStopAlertDialog = newState) }
+    }
+
+    fun updateLongClickedTransitStop(newStopCode: String?, newStopName: String?) {
+        _savedTransitStopsState.update {it.copy(
+            longClickedStopCode = newStopCode,
+            longClickedStopName = newStopName
+        )}
+    }
+
     /**
      * Adds a new {stopcode, nextArrivals} key-value pair to _nextArrivalsState.nextArrivalsMap.
      * Stopcode validation is the caller's responsibility.
@@ -380,10 +391,13 @@ data class GTFSStaticDataImportProgressState(
     val progStopTimes: Int = 0
 )
 
-// State class for when user adds saved stops
+// State class for managing user-saved TransitStops
 data class SavedTransitStopsState(
     val addNewStopWorkState: SimpleWorkState = SimpleWorkState.STANDBY,
-    val userSavedTransitStops: List<TransitStop> = emptyList()
+    val userSavedTransitStops: List<TransitStop> = emptyList(),
+    val showRemoveStopAlertDialog : Boolean = false,
+    val longClickedStopCode : String? = null,
+    val longClickedStopName : String? = null
 )
 
 // State class for when user queries for a stop's next arrivals.
