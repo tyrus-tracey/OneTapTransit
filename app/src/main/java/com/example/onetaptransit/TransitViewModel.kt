@@ -257,12 +257,31 @@ class TransitViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Removes a given TransitStop from the user-saved TransitStop list.
+     * TODO: double-check this does nothing if input doens't exist in list.
+     */
     fun removeTransitStop(transitStop: TransitStop) {
         _savedTransitStopsState.update { state ->
             state.copy(
                 userSavedTransitStops = state.userSavedTransitStops - transitStop
             )
         }
+    }
+
+    /**
+     * Searches user-saved TransitStop list for a given stopcode, and removes if found.
+     * Also replaces corresponding value in the nextArrivals map with an empty list.
+     * Returns early if no TransitStop entry is found.
+     */
+    fun removeTransitStopByStopCode(stopCode: String) {
+        val transitStop = _savedTransitStopsState.value.userSavedTransitStops.find { it.stopCode == stopCode }
+        if (transitStop == null) {
+            Log.e("VIEWMODEL",  "Error: Tried to remove transit stop, but could not find stopcode $stopCode.")
+            return
+        }
+        removeTransitStop(transitStop)
+        updateNextArrivals(stopCode, emptyList())
     }
 
     /**

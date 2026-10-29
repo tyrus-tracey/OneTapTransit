@@ -1,6 +1,7 @@
 package com.example.onetaptransit
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -125,8 +126,8 @@ class MainActivity : ComponentActivity() {
                         }
 
                         var showRemoveStopAlertDialog by rememberSaveable { mutableStateOf(false) }
-                        var tempStopCode by rememberSaveable { mutableStateOf("") }
-                        var tempStopName by rememberSaveable { mutableStateOf("") }
+                        var tempStopCode : String? by rememberSaveable { mutableStateOf("") }
+                        var tempStopName : String? by rememberSaveable { mutableStateOf("") }
 
                         UserSavedStopsDisplay(
                             savedTransitStopsState.value.userSavedTransitStops,
@@ -145,15 +146,35 @@ class MainActivity : ComponentActivity() {
                         )
 
                         if (showRemoveStopAlertDialog) {
-                            AlertDialog(
-                                onDismissRequest = {showRemoveStopAlertDialog = false},
-                                confirmButton = {TextButton(onClick = { showRemoveStopAlertDialog = false }) { Text("OK") }},
-                                dismissButton = {TextButton(onClick = { showRemoveStopAlertDialog = false }) { Text("Cancel") }},
-                                title = {Text(text="Remove Stop?")},
-                                text = {
-                                    Text(text="$tempStopCode $tempStopName", fontSize=16.sp, textAlign = TextAlign.Center)
-                                }
-                            )
+                            if (tempStopCode == null || tempStopName == null) {
+                                Log.e("MAIN ACTIVITY", "Attempted to create Alert Dialog, but selected transitStop state value is null: tempStopCode: $tempStopCode, tempStopName: $tempStopName")
+                            } else {
+                                AlertDialog(
+                                    onDismissRequest = { showRemoveStopAlertDialog = false },
+                                    confirmButton = {
+                                        TextButton(onClick = {
+                                            transitViewModel.removeTransitStopByStopCode(
+                                                tempStopCode!!
+                                            )
+                                            tempStopCode
+                                            showRemoveStopAlertDialog = false
+                                        }) { Text("OK") }
+                                    },
+                                    dismissButton = {
+                                        TextButton(onClick = {
+                                            showRemoveStopAlertDialog = false
+                                        }) { Text("Cancel") }
+                                    },
+                                    title = { Text(text = "Remove Stop?") },
+                                    text = {
+                                        Text(
+                                            text = "$tempStopCode $tempStopName",
+                                            fontSize = 16.sp,
+                                            textAlign = TextAlign.Center
+                                        )
+                                    }
+                                )
+                            }
                         }
                     }
                 }
